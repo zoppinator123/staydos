@@ -22,6 +22,9 @@ import {
   archiveTask,
 } from "@/lib/work/actions";
 import { ChecklistsPanel } from "./ChecklistsPanel";
+import { CustomFieldsPanel } from "./CustomFieldsPanel";
+import { AttachmentsPanel } from "./AttachmentsPanel";
+import { AssigneePicker } from "./AssigneePicker";
 
 interface Props {
   taskId: string;
@@ -37,7 +40,9 @@ export function TaskEditModal({ taskId, statuses, onClose, onSaved, onDeleted }:
   const [task, setTask] = useState<Task | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [activity, setActivity] = useState<TaskActivity[]>([]);
-  const [tab, setTab] = useState<"details" | "checklists" | "comments" | "activity">("details");
+  const [tab, setTab] = useState<
+    "details" | "checklists" | "custom_fields" | "attachments" | "comments" | "activity"
+  >("details");
   const [pending, startTransition] = useTransition();
   const [newComment, setNewComment] = useState("");
 
@@ -77,6 +82,7 @@ export function TaskEditModal({ taskId, statuses, onClose, onSaved, onDeleted }:
         time_estimate: task.time_estimate,
         tags: task.tags,
         recurrence_rule: task.recurrence_rule,
+        assignee_ids: task.assignee_ids,
       });
       setTask(updated);
       onSaved(updated);
@@ -147,17 +153,26 @@ export function TaskEditModal({ taskId, statuses, onClose, onSaved, onDeleted }:
       }
     >
       <div className="mb-3 flex gap-1 border-b border-zinc-200 dark:border-zinc-800">
-        {(["details", "checklists", "comments", "activity"] as const).map((t) => (
+        {(
+          [
+            ["details", "Details"],
+            ["checklists", "Checklists"],
+            ["custom_fields", "Custom fields"],
+            ["attachments", "Attachments"],
+            ["comments", "Comments"],
+            ["activity", "Activity"],
+          ] as const
+        ).map(([t, label]) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`-mb-px border-b-2 px-3 py-2 text-xs font-medium capitalize ${
+            className={`-mb-px border-b-2 px-3 py-2 text-xs font-medium ${
               tab === t
                 ? "border-indigo-500 text-indigo-700 dark:text-indigo-300"
                 : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
             }`}
           >
-            {t}
+            {label}
           </button>
         ))}
       </div>
@@ -242,6 +257,15 @@ export function TaskEditModal({ taskId, statuses, onClose, onSaved, onDeleted }:
           </div>
 
           <div className="md:col-span-2">
+            <Label>Assignees</Label>
+            <AssigneePicker
+              listId={task.list_id}
+              value={task.assignee_ids}
+              onChange={(v) => patch("assignee_ids", v)}
+            />
+          </div>
+
+          <div className="md:col-span-2">
             <RecurrenceEditor
               value={task.recurrence_rule}
               onChange={(v) => patch("recurrence_rule", v)}
@@ -251,6 +275,17 @@ export function TaskEditModal({ taskId, statuses, onClose, onSaved, onDeleted }:
       ) : null}
 
       {tab === "checklists" ? <ChecklistsPanel taskId={task.id} /> : null}
+
+      {tab === "custom_fields" ? (
+        <CustomFieldsPanel
+          taskId={task.id}
+          listId={task.list_id}
+          values={task.custom_fields ?? {}}
+          onChange={(v) => patch("custom_fields", v)}
+        />
+      ) : null}
+
+      {tab === "attachments" ? <AttachmentsPanel taskId={task.id} /> : null}
 
       {tab === "comments" ? (
         <div className="space-y-3">

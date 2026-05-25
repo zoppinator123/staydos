@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getSpaces, getFolders, getLists } from "@/lib/work/actions";
 import type { Folder, List, Space } from "@/lib/work/types";
 import { SidebarCreateMenu } from "./SidebarCreateMenu";
+import { UserMenu } from "./UserMenu";
+import { getCurrentUser } from "@/lib/auth/actions";
 
 interface Props {
   activeListId?: string;
@@ -9,7 +11,7 @@ interface Props {
 }
 
 export async function Sidebar({ activeListId, activeSpaceId }: Props) {
-  const spaces = await getSpaces();
+  const [spaces, user] = await Promise.all([getSpaces(), getCurrentUser()]);
 
   // Pre-fetch folders + lists for all spaces, in parallel
   const perSpace = await Promise.all(
@@ -56,6 +58,10 @@ export async function Sidebar({ activeListId, activeSpaceId }: Props) {
             />
           ))
         )}
+      </div>
+
+      <div className="border-t border-zinc-200 px-2 pt-2 dark:border-zinc-800">
+        <UserMenu email={user?.email ?? null} />
       </div>
     </aside>
   );

@@ -16,7 +16,12 @@ export default async function MyTasksPage() {
           </p>
         </header>
         <div className="px-6 py-4">
-          <TaskTable listId="" tasks={tasks} showListColumn />
+          <TaskTable
+            listId=""
+            tasks={tasks}
+            showListColumn
+            emptyMessage="Nothing assigned to you yet."
+          />
         </div>
       </main>
     </>

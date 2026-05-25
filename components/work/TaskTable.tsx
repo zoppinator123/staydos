@@ -5,6 +5,11 @@ import { completeTask, reorderTasks, uncompleteTask } from "@/lib/work/actions";
 import type { Status, Task, TaskWithMeta } from "@/lib/work/types";
 import { PriorityBadge, StatusBadge, Tag } from "@/components/ui/Badge";
 import { TaskEditModal } from "./TaskEditModal";
+import {
+  TaskFilterBar,
+  DEFAULT_FILTER,
+  type TaskFilterState,
+} from "./TaskFilterBar";
 
 type RowTask = Task | TaskWithMeta;
 
@@ -13,13 +18,25 @@ interface Props {
   tasks: RowTask[];
   statuses?: Status[];
   showListColumn?: boolean;
+  showFilters?: boolean;
+  showKanbanToggle?: boolean;
+  emptyMessage?: string;
 }
 
-export function TaskTable({ listId, tasks: initial, statuses = [], showListColumn }: Props) {
+export function TaskTable({
+  listId,
+  tasks: initial,
+  statuses = [],
+  showListColumn,
+  showFilters = true,
+  showKanbanToggle = false,
+  emptyMessage = "No tasks yet.",
+}: Props) {
   const [tasks, setTasks] = useState<RowTask[]>(initial);
   const [editing, setEditing] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [filter, setFilter] = useState<TaskFilterState>(DEFAULT_FILTER);
 
   const statusMap = useMemo(() => {
     const m = new Map<string, Status>();
@@ -37,6 +54,25 @@ export function TaskTable({ listId, tasks: initial, statuses = [], showListColum
     }
     return { name: null, color: null, category: null };
   }
+
+  const filtered = useMemo(() => {
+    const q = filter.query.trim().toLowerCase();
+    return tasks.filter((t) => {
+      if (!filter.showCompleted && t.completed_at) return false;
+      if (filter.status && t.status_id !== filter.status) return false;
+      if (filter.priority && t.priority !== filter.priority) return false;
+      if (q) {
+        const hay =
+          (t.title ?? "") +
+          " " +
+          (t.description ?? "") +
+          " " +
+          (t.tags ?? []).join(" ");
+        if (!hay.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+  }, [tasks, filter]);
 
   function toggleComplete(t: RowTask) {
     startTransition(async () => {
@@ -57,7 +93,7 @@ export function TaskTable({ listId, tasks: initial, statuses = [], showListColum
     e.preventDefault();
   }
   function onDrop(targetId: string) {
-    if (!dragId || dragId === targetId) return;
+    if (!dragId || dragId === targetId || !listId) return;
     const cur = [...tasks];
     const from = cur.findIndex((t) => t.id === dragId);
     const to = cur.findIndex((t) => t.id === targetId);
@@ -76,44 +112,75 @@ export function TaskTable({ listId, tasks: initial, statuses = [], showListColum
     });
   }
 
+  const isKanban = showKanbanToggle && filter.view === "kanban";
+
   return (
     <div className="w-full">
-      <table className="w-full table-fixed text-sm">
-        <colgroup>
-          <col className="w-8" />
-          <col />
-          <col className="w-32" />
-          <col className="w-32" />
-          <col className="w-28" />
-          <col className="w-28" />
-          {showListColumn ? <col className="w-32" /> : null}
-        </colgroup>
-        <thead className="border-b border-zinc-200 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
-          <tr>
-            <th></th>
-            <th className="px-2 py-2">Task</th>
-            <th className="px-2 py-2">Status</th>
-            <th className="px-2 py-2">Assignees</th>
-            <th className="px-2 py-2">Due</th>
-            <th className="px-2 py-2">Priority</th>
-            {showListColumn ? <th className="px-2 py-2">List</th> : null}
-          </tr>
-        </thead>
-        <tbody>
+      {showFilters ? (
+        <TaskFilterBar
+          value={filter}
+          onChange={setFilter}
+          statuses={statuses}
+          showViewToggle={showKanbanToggle}
+        />
+      ) : null}
+
+      {filtered.length === 0 ? (
+        <div className="rounded-md border border-dashed border-zinc-300 px-6 py-16 text-center dark:border-zinc-700">
+          <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            {tasks.length === 0 ? emptyMessage : "No tasks match your filters."}
+          </p>
           {tasks.length === 0 ? (
-            <tr>
-              <td colSpan={showListColumn ? 7 : 6} className="py-12 text-center text-zinc-500">
-                No tasks yet.
-              </td>
-            </tr>
+            <p className="mt-1 text-xs text-zinc-500">
+              Add your first task using the row below.
+            </p>
           ) : (
-            tasks.map((t) => {
+            <button
+              onClick={() => setFilter(DEFAULT_FILTER)}
+              className="mt-3 text-xs text-indigo-600 hover:underline dark:text-indigo-400"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      ) : isKanban ? (
+        <KanbanBoard
+          tasks={filtered}
+          statuses={statuses}
+          onOpen={(id) => setEditing(id)}
+          onToggleComplete={toggleComplete}
+          pending={pending}
+        />
+      ) : (
+        <table className="w-full table-fixed text-sm">
+          <colgroup>
+            <col className="w-8" />
+            <col />
+            <col className="w-32" />
+            <col className="w-32" />
+            <col className="w-28" />
+            <col className="w-28" />
+            {showListColumn ? <col className="w-32" /> : null}
+          </colgroup>
+          <thead className="border-b border-zinc-200 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
+            <tr>
+              <th></th>
+              <th className="px-2 py-2">Task</th>
+              <th className="px-2 py-2">Status</th>
+              <th className="px-2 py-2">Assignees</th>
+              <th className="px-2 py-2">Due</th>
+              <th className="px-2 py-2">Priority</th>
+              {showListColumn ? <th className="px-2 py-2">List</th> : null}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((t) => {
               const st = statusFor(t);
               const completed = !!t.completed_at;
               return (
                 <tr
                   key={t.id}
-                  draggable
+                  draggable={!!listId}
                   onDragStart={() => onDragStart(t.id)}
                   onDragOver={onDragOver}
                   onDrop={() => onDrop(t.id)}
@@ -170,10 +237,10 @@ export function TaskTable({ listId, tasks: initial, statuses = [], showListColum
                   ) : null}
                 </tr>
               );
-            })
-          )}
-        </tbody>
-      </table>
+            })}
+          </tbody>
+        </table>
+      )}
 
       {editing ? (
         <TaskEditModal
@@ -186,6 +253,95 @@ export function TaskTable({ listId, tasks: initial, statuses = [], showListColum
           onDeleted={(id) => setTasks((cur) => cur.filter((t) => t.id !== id))}
         />
       ) : null}
+    </div>
+  );
+}
+
+interface KanbanProps {
+  tasks: RowTask[];
+  statuses: Status[];
+  onOpen: (id: string) => void;
+  onToggleComplete: (t: RowTask) => void;
+  pending: boolean;
+}
+
+function KanbanBoard({ tasks, statuses, onOpen, onToggleComplete, pending }: KanbanProps) {
+  const columns = useMemo(() => {
+    const cols: Array<{ id: string | null; name: string; color: string | null; tasks: RowTask[] }> =
+      statuses.map((s) => ({ id: s.id, name: s.name, color: s.color, tasks: [] }));
+    const noStatus: { id: null; name: string; color: null; tasks: RowTask[] } = {
+      id: null,
+      name: "No status",
+      color: null,
+      tasks: [],
+    };
+    for (const t of tasks) {
+      const col = cols.find((c) => c.id === t.status_id);
+      if (col) col.tasks.push(t);
+      else noStatus.tasks.push(t);
+    }
+    return noStatus.tasks.length ? [noStatus, ...cols] : cols;
+  }, [tasks, statuses]);
+
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-2">
+      {columns.map((col) => (
+        <div
+          key={col.id ?? "none"}
+          className="flex w-64 shrink-0 flex-col rounded-md border border-zinc-200 bg-zinc-50/50 dark:border-zinc-800 dark:bg-zinc-900/40"
+        >
+          <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-2 text-xs font-semibold dark:border-zinc-800">
+            <span
+              className="inline-flex items-center gap-2"
+              style={col.color ? { color: col.color } : undefined}
+            >
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ background: col.color ?? "#a1a1aa" }}
+              />
+              {col.name}
+            </span>
+            <span className="text-[10px] text-zinc-500">{col.tasks.length}</span>
+          </div>
+          <div className="flex flex-col gap-2 p-2">
+            {col.tasks.length === 0 ? (
+              <p className="px-2 py-4 text-center text-[11px] text-zinc-400">No tasks</p>
+            ) : (
+              col.tasks.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => onOpen(t.id)}
+                  className="rounded-md border border-zinc-200 bg-white p-2 text-left text-xs shadow-sm hover:border-indigo-400 dark:border-zinc-800 dark:bg-zinc-900"
+                >
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={!!t.completed_at}
+                      onChange={() => onToggleComplete(t)}
+                      onClick={(e) => e.stopPropagation()}
+                      disabled={pending}
+                      className="mt-0.5 h-3.5 w-3.5 accent-indigo-600"
+                    />
+                    <span
+                      className={`flex-1 ${
+                        t.completed_at ? "text-zinc-400 line-through" : ""
+                      }`}
+                    >
+                      {t.title}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-[10px] text-zinc-500">
+                    <PriorityBadge value={t.priority} />
+                    <span>
+                      {t.due_date ? new Date(t.due_date).toLocaleDateString() : ""}
+                    </span>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

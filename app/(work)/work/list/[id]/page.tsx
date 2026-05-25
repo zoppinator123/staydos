@@ -18,7 +18,13 @@ export default async function ListPage({ params }: { params: Promise<{ id: strin
       <main className="flex-1 overflow-y-auto">
         <ListHeader list={list} />
         <div className="px-6 py-4">
-          <TaskTable listId={list.id} tasks={tasks} statuses={statuses} />
+          <TaskTable
+            listId={list.id}
+            tasks={tasks}
+            statuses={statuses}
+            showKanbanToggle
+            emptyMessage="This list has no tasks yet."
+          />
           <NewTaskRow listId={list.id} />
         </div>
       </main>
