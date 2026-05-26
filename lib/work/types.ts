@@ -129,6 +129,11 @@ export interface Comment {
   updated_at: string;
 }
 
+export interface CommentWithAuthor extends Comment {
+  author_email: string | null;
+  author_name: string | null;
+}
+
 export interface TaskActivity {
   id: string;
   task_id: string;
@@ -138,6 +143,11 @@ export interface TaskActivity {
   to_value: Record<string, unknown> | null;
   metadata: Record<string, unknown>;
   created_at: string;
+}
+
+export interface TaskActivityEntry extends TaskActivity {
+  actor_email: string | null;
+  actor_name: string | null;
 }
 
 export interface ListMember {

@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { db, currentUserId, nextOrder, logActivity } from "./shared";
+import { db, admin, currentUserId, nextOrder, logActivity } from "./shared";
 import { nextOccurrence, isValidRecurrenceRule } from "./recurrence";
 import { requireListAccess } from "./permissions";
 import type {
+  Comment,
+  CommentWithAuthor,
   CreateAttachmentInput,
   CreateChecklistInput,
   CreateChecklistItemInput,
@@ -21,6 +23,7 @@ import type {
   Space,
   Status,
   Task,
+  TaskActivityEntry,
   TaskQuery,
   TaskWithMeta,
   UpdateChecklistItemInput,
@@ -484,30 +487,32 @@ export async function updateTask(id: string, input: UpdateTaskInput): Promise<Ta
   const { data, error } = await sb.from("tasks").update(input).eq("id", id).select().single();
   if (error) throw error;
 
-  // Diff & log
-  const tracked: (keyof UpdateTaskInput)[] = [
-    "title",
-    "description",
-    "status_id",
-    "priority",
-    "due_date",
-    "start_date",
-    "assignee_ids",
-    "tags",
-    "list_id",
-  ];
-  for (const k of tracked) {
+  // Diff & log with semantic action names
+  const fieldActionMap: Partial<Record<keyof UpdateTaskInput, string>> = {
+    status_id: "status_changed",
+    priority: "priority_changed",
+    due_date: "due_date_changed",
+    assignee_ids: "assignees_changed",
+    title: "renamed",
+    description: "description_changed",
+    list_id: "moved",
+  };
+  for (const [k, action] of Object.entries(fieldActionMap) as [keyof UpdateTaskInput, string][]) {
     if (k in input) {
       const before = (prev as Record<string, unknown>)[k];
       const after = (data as Record<string, unknown>)[k];
       if (JSON.stringify(before) !== JSON.stringify(after)) {
-        await logActivity({
-          task_id: id,
-          actor_id: userId,
-          action: `updated_${k}`,
-          from_value: { [k]: before },
-          to_value: { [k]: after },
-        });
+        try {
+          await logActivity({
+            task_id: id,
+            actor_id: userId,
+            action,
+            from_value: { [k]: before },
+            to_value: { [k]: after },
+          });
+        } catch (err) {
+          console.error("[activity] Failed to log", action, err);
+        }
       }
     }
   }
@@ -952,7 +957,10 @@ export async function reorderChecklistItems(
 
 // ==================== COMMENTS ====================
 
-export async function getComments(taskId: string) {
+/**
+ * Fetch comments for a task, hydrated with author email/name.
+ */
+export async function getComments(taskId: string): Promise<CommentWithAuthor[]> {
   const sb = await db();
   const { data, error } = await sb
     .from("comments")
@@ -960,41 +968,83 @@ export async function getComments(taskId: string) {
     .eq("task_id", taskId)
     .order("created_at");
   if (error) throw error;
-  return data ?? [];
+  const rows: Comment[] = data ?? [];
+  if (rows.length === 0) return [];
+
+  // Hydrate author info via admin client
+  const adminClient = await admin();
+  const { data: usersData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+  const userMap = new Map<string, { email: string; name: string | null }>(
+    (usersData?.users ?? []).map((u) => [
+      u.id,
+      {
+        email: u.email ?? "",
+        name:
+          (u.user_metadata as Record<string, unknown> | undefined)?.full_name as
+            | string
+            | null ?? null,
+      },
+    ])
+  );
+
+  return rows.map((r) => ({
+    ...r,
+    author_email: userMap.get(r.author_id)?.email ?? null,
+    author_name: userMap.get(r.author_id)?.name ?? null,
+  }));
 }
 
-export async function createComment(input: CreateCommentInput) {
+/**
+ * Add a comment to a task. New signature: { taskId, body }.
+ */
+export async function addComment({
+  taskId,
+  body,
+}: {
+  taskId: string;
+  body: string;
+}): Promise<Comment> {
   const sb = await db();
   const userId = await currentUserId();
   const { data, error } = await sb
     .from("comments")
-    .insert({ task_id: input.task_id, author_id: userId, body: input.body })
+    .insert({ task_id: taskId, author_id: userId, body })
     .select()
     .single();
   if (error) throw error;
   await logActivity({
-    task_id: input.task_id,
+    task_id: taskId,
     actor_id: userId,
     action: "commented",
     to_value: { comment_id: data.id },
   });
   revalidatePath("/work");
-  return data;
+  return data as Comment;
 }
 
-export async function updateComment(id: string, input: UpdateCommentInput) {
+export async function createComment(input: CreateCommentInput): Promise<Comment> {
+  return addComment({ taskId: input.task_id, body: input.body });
+}
+
+export async function updateComment(id: string, body: string): Promise<Comment>;
+export async function updateComment(id: string, input: UpdateCommentInput): Promise<Comment>;
+export async function updateComment(
+  id: string,
+  bodyOrInput: string | UpdateCommentInput
+): Promise<Comment> {
   const sb = await db();
   const userId = await currentUserId();
+  const body = typeof bodyOrInput === "string" ? bodyOrInput : bodyOrInput.body;
   const { data, error } = await sb
     .from("comments")
-    .update({ body: input.body })
+    .update({ body, updated_at: new Date().toISOString() })
     .eq("id", id)
     .eq("author_id", userId)
     .select()
     .single();
   if (error) throw error;
   revalidatePath("/work");
-  return data;
+  return data as Comment;
 }
 
 export async function deleteComment(id: string): Promise<void> {
@@ -1006,6 +1056,44 @@ export async function deleteComment(id: string): Promise<void> {
 }
 
 // ==================== ACTIVITY ====================
+
+/**
+ * Fetch activity for a task, hydrated with actor email/name.
+ */
+export async function getActivity(taskId: string): Promise<TaskActivityEntry[]> {
+  const sb = await db();
+  const { data, error } = await sb
+    .from("task_activity")
+    .select("*")
+    .eq("task_id", taskId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) throw error;
+  const rows = data ?? [];
+  if (rows.length === 0) return [];
+
+  // Hydrate actor info via admin client
+  const adminClient = await admin();
+  const { data: usersData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+  const userMap = new Map<string, { email: string; name: string | null }>(
+    (usersData?.users ?? []).map((u) => [
+      u.id,
+      {
+        email: u.email ?? "",
+        name:
+          (u.user_metadata as Record<string, unknown> | undefined)?.full_name as
+            | string
+            | null ?? null,
+      },
+    ])
+  );
+
+  return rows.map((r) => ({
+    ...r,
+    actor_email: r.actor_id ? (userMap.get(r.actor_id)?.email ?? null) : null,
+    actor_name: r.actor_id ? (userMap.get(r.actor_id)?.name ?? null) : null,
+  })) as TaskActivityEntry[];
+}
 
 export async function getTaskActivity(taskId: string, limit = 100) {
   const sb = await db();

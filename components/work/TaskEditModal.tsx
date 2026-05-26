@@ -5,26 +5,23 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Select, Textarea } from "@/components/ui/Input";
 import type {
-  Comment,
   RecurrenceRule,
   Status,
   Task,
-  TaskActivity,
   TaskPriority,
 } from "@/lib/work/types";
 import {
   deleteTask,
-  getComments,
   getTask,
-  getTaskActivity,
   updateTask,
-  createComment,
   archiveTask,
 } from "@/lib/work/actions";
 import { ChecklistsPanel } from "./ChecklistsPanel";
 import { CustomFieldsPanel } from "./CustomFieldsPanel";
 import { AttachmentsPanel } from "./AttachmentsPanel";
 import { AssigneePicker } from "./AssigneePicker";
+import { CommentsPanel } from "./CommentsPanel";
+import { ActivityFeed } from "./ActivityFeed";
 
 interface Props {
   taskId: string;
@@ -38,13 +35,10 @@ const PRIORITIES: TaskPriority[] = ["urgent", "high", "normal", "low", "none"];
 
 export function TaskEditModal({ taskId, statuses, onClose, onSaved, onDeleted }: Props) {
   const [task, setTask] = useState<Task | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [activity, setActivity] = useState<TaskActivity[]>([]);
   const [tab, setTab] = useState<
     "details" | "checklists" | "custom_fields" | "attachments" | "comments" | "activity"
   >("details");
   const [pending, startTransition] = useTransition();
-  const [newComment, setNewComment] = useState("");
 
   // Cmd/Ctrl+Enter inside the modal → save & close
   useEffect(() => {
@@ -77,16 +71,10 @@ export function TaskEditModal({ taskId, statuses, onClose, onSaved, onDeleted }:
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      const [t, c, a] = await Promise.all([
-        getTask(taskId),
-        getComments(taskId),
-        getTaskActivity(taskId),
-      ]);
+    void (async () => {
+      const t = await getTask(taskId);
       if (cancelled) return;
       setTask(t);
-      setComments(c);
-      setActivity(a);
     })();
     return () => {
       cancelled = true;
@@ -134,15 +122,6 @@ export function TaskEditModal({ taskId, statuses, onClose, onSaved, onDeleted }:
       await archiveTask(task.id);
       onDeleted(task.id);
       onClose();
-    });
-  }
-
-  function postComment() {
-    if (!task || !newComment.trim()) return;
-    startTransition(async () => {
-      const c = await createComment({ task_id: task.id, body: newComment.trim() });
-      setComments((cur) => [...cur, c]);
-      setNewComment("");
     });
   }
 
@@ -316,58 +295,9 @@ export function TaskEditModal({ taskId, statuses, onClose, onSaved, onDeleted }:
 
       {tab === "attachments" ? <AttachmentsPanel taskId={task.id} /> : null}
 
-      {tab === "comments" ? (
-        <div className="space-y-3">
-          <div className="space-y-2">
-            {comments.length === 0 ? (
-              <p className="text-xs text-zinc-500">No comments yet.</p>
-            ) : (
-              comments.map((c) => (
-                <div
-                  key={c.id}
-                  className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900"
-                >
-                  <div className="text-xs text-zinc-500">
-                    {new Date(c.created_at).toLocaleString()}
-                  </div>
-                  <div className="whitespace-pre-wrap">{c.body}</div>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Textarea
-              rows={2}
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment…"
-            />
-            <Button onClick={postComment} disabled={pending || !newComment.trim()}>
-              Post
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      {tab === "comments" ? <CommentsPanel taskId={task.id} /> : null}
 
-      {tab === "activity" ? (
-        <div className="space-y-2">
-          {activity.length === 0 ? (
-            <p className="text-xs text-zinc-500">No activity yet.</p>
-          ) : (
-            activity.map((a) => (
-              <div
-                key={a.id}
-                className="flex justify-between rounded border border-zinc-100 px-3 py-1.5 text-xs text-zinc-700 dark:border-zinc-900 dark:text-zinc-300"
-              >
-                <span>{a.action}</span>
-                <span className="text-zinc-500">
-                  {new Date(a.created_at).toLocaleString()}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
-      ) : null}
+      {tab === "activity" ? <ActivityFeed taskId={task.id} statuses={statuses} /> : null}
     </Modal>
   );
 }
