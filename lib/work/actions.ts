@@ -17,6 +17,7 @@ import type {
   CreateSpaceInput,
   CreateStatusInput,
   CreateTaskInput,
+  DashboardSummary,
   Folder,
   List,
   MentionableUser,
@@ -1477,6 +1478,149 @@ async function emitCommentNotifications({
         })
       )
   );
+}
+
+// ==================== DASHBOARD ====================
+
+export async function getDashboardSummary(
+  opts?: { spaceId?: string }
+): Promise<DashboardSummary> {
+  const adminClient = await admin();
+  const userId = await currentUserId();
+
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10); // YYYY-MM-DD
+
+  const weekStart = new Date(today);
+  weekStart.setUTCDate(today.getUTCDate() - today.getUTCDay());
+  weekStart.setUTCHours(0, 0, 0, 0);
+
+  // Fetch all non-archived tasks (use admin to avoid RLS issues on aggregate reads)
+  let q = adminClient.from("tasks_with_meta").select("*").is("archived_at", null);
+  if (opts?.spaceId) q = q.eq("space_id", opts.spaceId);
+  const { data: allTasks, error: allErr } = await q;
+  if (allErr) throw allErr;
+  const tasks = allTasks ?? [];
+
+  // Counts
+  const openTasks = tasks.filter((t) => !t.completed_at);
+  const overdueTasks = openTasks.filter(
+    (t) => t.due_date && t.due_date.slice(0, 10) < todayStr
+  );
+  const completedThisWeek = tasks.filter(
+    (t) => t.completed_at && new Date(t.completed_at) >= weekStart
+  );
+  const myOpenTasks = openTasks.filter(
+    (t) => Array.isArray(t.assignee_ids) && (t.assignee_ids as string[]).includes(userId)
+  );
+  const dueTodayTasks = openTasks.filter(
+    (t) => t.due_date && t.due_date.slice(0, 10) === todayStr
+  );
+
+  // By status (open tasks only)
+  const statusMap = new Map<
+    string,
+    { status_id: string | null; status_name: string | null; status_color: string | null; count: number }
+  >();
+  for (const t of openTasks) {
+    const key = t.status_id ?? "__null__";
+    const existing = statusMap.get(key);
+    if (existing) {
+      existing.count++;
+    } else {
+      statusMap.set(key, {
+        status_id: t.status_id ?? null,
+        status_name: (t.status_name as string | null) ?? null,
+        status_color: (t.status_color as string | null) ?? null,
+        count: 1,
+      });
+    }
+  }
+  const byStatus = [...statusMap.values()].sort((a, b) => b.count - a.count);
+
+  // By priority (open tasks only)
+  const priorityOrder = ["urgent", "high", "normal", "low"] as const;
+  type PriorityKey = (typeof priorityOrder)[number];
+  const priorityMap = new Map<PriorityKey, number>();
+  for (const p of priorityOrder) priorityMap.set(p, 0);
+  for (const t of openTasks) {
+    const p = t.priority as string;
+    if (p === "urgent" || p === "high" || p === "normal" || p === "low") {
+      priorityMap.set(p, (priorityMap.get(p) ?? 0) + 1);
+    }
+  }
+  const byPriority = priorityOrder.map((p) => ({ priority: p, count: priorityMap.get(p) ?? 0 }));
+
+  // By assignee — top 10 (open tasks only)
+  const assigneeCountMap = new Map<string, number>();
+  for (const t of openTasks) {
+    if (Array.isArray(t.assignee_ids)) {
+      for (const aid of t.assignee_ids as string[]) {
+        assigneeCountMap.set(aid, (assigneeCountMap.get(aid) ?? 0) + 1);
+      }
+    }
+  }
+  const top10Assignees = [...assigneeCountMap.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+
+  // Hydrate assignee info
+  const { data: usersData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+  const userMap = new Map<string, { email: string; name: string | null }>(
+    (usersData?.users ?? []).map((u) => [
+      u.id,
+      {
+        email: u.email ?? "",
+        name:
+          ((u.user_metadata as Record<string, unknown> | undefined)?.full_name as string | null) ??
+          null,
+      },
+    ])
+  );
+
+  const byAssignee = top10Assignees.map(([aid, count]) => ({
+    assignee_id: aid,
+    assignee_email: userMap.get(aid)?.email ?? null,
+    assignee_name: userMap.get(aid)?.name ?? null,
+    count,
+  }));
+
+  // Completed per day, last 30 days
+  const completedPerDayLast30: { date: string; count: number }[] = [];
+  const dayCountMap = new Map<string, number>();
+  const cutoff = new Date(today);
+  cutoff.setUTCDate(cutoff.getUTCDate() - 29);
+  cutoff.setUTCHours(0, 0, 0, 0);
+
+  for (const t of tasks) {
+    if (!t.completed_at) continue;
+    const d = new Date(t.completed_at);
+    if (d < cutoff) continue;
+    const dateStr = d.toISOString().slice(0, 10);
+    dayCountMap.set(dateStr, (dayCountMap.get(dateStr) ?? 0) + 1);
+  }
+
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setUTCDate(today.getUTCDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    completedPerDayLast30.push({ date: dateStr, count: dayCountMap.get(dateStr) ?? 0 });
+  }
+
+  return {
+    counts: {
+      total: tasks.length,
+      open: openTasks.length,
+      overdue: overdueTasks.length,
+      completedThisWeek: completedThisWeek.length,
+      myOpen: myOpenTasks.length,
+      dueToday: dueTodayTasks.length,
+    },
+    byStatus,
+    byPriority,
+    byAssignee,
+    completedPerDayLast30,
+  };
 }
 
 // Permission actions live in ./permissions and should be imported directly

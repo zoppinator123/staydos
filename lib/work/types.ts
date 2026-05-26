@@ -360,6 +360,39 @@ export interface MentionableUser {
   name: string | null;
 }
 
+// ==================== DASHBOARD ====================
+
+export interface DashboardSummary {
+  counts: {
+    total: number;
+    open: number;
+    overdue: number;
+    completedThisWeek: number;
+    myOpen: number;
+    dueToday: number;
+  };
+  byStatus: {
+    status_id: string | null;
+    status_name: string | null;
+    status_color: string | null;
+    count: number;
+  }[];
+  byPriority: {
+    priority: "urgent" | "high" | "normal" | "low";
+    count: number;
+  }[];
+  byAssignee: {
+    assignee_id: string;
+    assignee_email: string | null;
+    assignee_name: string | null;
+    count: number;
+  }[];
+  completedPerDayLast30: {
+    date: string; // YYYY-MM-DD
+    count: number;
+  }[];
+}
+
 // ==================== QUERY / VIEW TYPES ====================
 export interface TaskFilter {
   list_ids?: string[];

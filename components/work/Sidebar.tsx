@@ -38,6 +38,7 @@ export async function Sidebar({ activeListId, activeSpaceId }: Props) {
       </div>
 
       <nav className="space-y-0.5 px-2 pb-2">
+        <SidebarLink href="/dashboard" label="Dashboard" />
         <SidebarLink href="/work" label="All Work" active={!activeListId && !activeSpaceId} />
         <SidebarLink href="/my-tasks" label="My Tasks" />
       </nav>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Select } from "@/components/ui/Input";
@@ -43,6 +44,12 @@ export function SpacePageActions({ spaceId }: { spaceId: string }) {
 
   return (
     <div className="flex gap-2">
+      <Link
+        href={`/work/space/${spaceId}/dashboard`}
+        className="inline-flex items-center rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+      >
+        Dashboard
+      </Link>
       <Button variant="secondary" size="sm" onClick={() => setFolderOpen(true)}>
         New folder
       </Button>
