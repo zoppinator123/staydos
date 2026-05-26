@@ -46,6 +46,35 @@ export function TaskEditModal({ taskId, statuses, onClose, onSaved, onDeleted }:
   const [pending, startTransition] = useTransition();
   const [newComment, setNewComment] = useState("");
 
+  // Cmd/Ctrl+Enter inside the modal → save & close
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        if (!task || pending) return;
+        startTransition(async () => {
+          const updated = await updateTask(task.id, {
+            title: task.title,
+            description: task.description,
+            status_id: task.status_id,
+            priority: task.priority,
+            due_date: task.due_date,
+            start_date: task.start_date,
+            time_estimate: task.time_estimate,
+            tags: task.tags,
+            recurrence_rule: task.recurrence_rule,
+            assignee_ids: task.assignee_ids,
+          });
+          setTask(updated);
+          onSaved(updated);
+          onClose();
+        });
+      }
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [task, pending, onSaved, onClose]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {

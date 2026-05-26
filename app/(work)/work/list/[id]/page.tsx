@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation";
 import { Sidebar } from "@/components/work/Sidebar";
 import { getList, getStatuses, getTasks } from "@/lib/work/actions";
-import { TaskTable } from "@/components/work/TaskTable";
+import { ListTaskView } from "@/components/work/ListTaskView";
 import { ListHeader } from "@/components/work/ListHeader";
-import { NewTaskRow } from "@/components/work/NewTaskRow";
 
 export default async function ListPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,14 +17,7 @@ export default async function ListPage({ params }: { params: Promise<{ id: strin
       <main className="flex-1 overflow-y-auto">
         <ListHeader list={list} />
         <div className="px-6 py-4">
-          <TaskTable
-            listId={list.id}
-            tasks={tasks}
-            statuses={statuses}
-            showKanbanToggle
-            emptyMessage="This list has no tasks yet."
-          />
-          <NewTaskRow listId={list.id} />
+          <ListTaskView listId={list.id} tasks={tasks} statuses={statuses} />
         </div>
       </main>
     </>

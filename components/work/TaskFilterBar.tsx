@@ -25,9 +25,11 @@ interface Props {
   onChange: (next: TaskFilterState) => void;
   statuses?: Status[];
   showViewToggle?: boolean;
+  /** Ref forwarded to the search input for keyboard shortcut '/' */
+  filterInputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
-export function TaskFilterBar({ value, onChange, statuses = [], showViewToggle }: Props) {
+export function TaskFilterBar({ value, onChange, statuses = [], showViewToggle, filterInputRef }: Props) {
   const statusOptions = useMemo(
     () => [
       { value: "", label: "All statuses" },
@@ -39,6 +41,7 @@ export function TaskFilterBar({ value, onChange, statuses = [], showViewToggle }
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
       <Input
+        ref={filterInputRef}
         value={value.query}
         onChange={(e) => onChange({ ...value, query: e.target.value })}
         placeholder="Search tasks…"
