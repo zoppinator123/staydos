@@ -19,6 +19,8 @@ import type {
   CreateTaskInput,
   Folder,
   List,
+  MentionableUser,
+  NotificationWithMeta,
   PaginatedTasks,
   Space,
   Status,
@@ -463,6 +465,20 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     to_value: { title: data.title },
   });
 
+  // Notify newly assigned users
+  if (data.assignee_ids.length > 0) {
+    try {
+      await emitAssignedNotifications({
+        newAssigneeIds: data.assignee_ids,
+        actorId: userId,
+        taskId: data.id,
+        taskTitle: data.title,
+      });
+    } catch (err) {
+      console.error("[notifications] createTask assign error", err);
+    }
+  }
+
   revalidatePath("/work");
   return data;
 }
@@ -513,6 +529,24 @@ export async function updateTask(id: string, input: UpdateTaskInput): Promise<Ta
         } catch (err) {
           console.error("[activity] Failed to log", action, err);
         }
+      }
+    }
+  }
+
+  // Notify newly-added assignees
+  if ("assignee_ids" in input && input.assignee_ids) {
+    const prevIds = new Set(prev.assignee_ids as string[]);
+    const newIds = (input.assignee_ids as string[]).filter((id) => !prevIds.has(id));
+    if (newIds.length > 0) {
+      try {
+        await emitAssignedNotifications({
+          newAssigneeIds: newIds,
+          actorId: userId,
+          taskId: id,
+          taskTitle: data.title,
+        });
+      } catch (err) {
+        console.error("[notifications] updateTask assign error", err);
       }
     }
   }
@@ -1018,6 +1052,39 @@ export async function addComment({
     action: "commented",
     to_value: { comment_id: data.id },
   });
+
+  // Emit notifications (best-effort, non-blocking)
+  try {
+    // Collect mentioned emails before awaiting anything
+    const mentionRegex = /@([A-Za-z0-9._%+-]+@stayd\.co)\b/g;
+    const mentionedEmails: string[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = mentionRegex.exec(body)) !== null) {
+      mentionedEmails.push(m[1]);
+    }
+
+    // Fetch task for assignee list
+    const { data: task } = await sb
+      .from("tasks")
+      .select("assignee_ids")
+      .eq("id", taskId)
+      .single();
+    const assigneeIds: string[] = (task?.assignee_ids as string[] | null) ?? [];
+
+    await Promise.all([
+      emitMentionNotifications({ body, actorId: userId, taskId, commentId: data.id }),
+      emitCommentNotifications({
+        assigneeIds,
+        actorId: userId,
+        taskId,
+        commentId: data.id,
+        mentionedEmails,
+      }),
+    ]);
+  } catch (err) {
+    console.error("[notifications] addComment error", err);
+  }
+
   revalidatePath("/work");
   return data as Comment;
 }
@@ -1152,6 +1219,264 @@ export async function deleteAttachment(id: string): Promise<void> {
   const { error } = await sb.from("attachments").delete().eq("id", id);
   if (error) throw error;
   revalidatePath("/work");
+}
+
+// ==================== NOTIFICATIONS ====================
+
+// Module-level cache for mentionable users (30s TTL)
+let _mentionableUsersCache: { users: MentionableUser[]; ts: number } | null = null;
+
+export async function listMentionableUsers(): Promise<MentionableUser[]> {
+  const now = Date.now();
+  if (_mentionableUsersCache && now - _mentionableUsersCache.ts < 30_000) {
+    return _mentionableUsersCache.users;
+  }
+  const adminClient = await admin();
+  const { data } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+  const users: MentionableUser[] = (data?.users ?? []).map((u) => ({
+    id: u.id,
+    email: u.email ?? "",
+    name:
+      ((u.user_metadata as Record<string, unknown> | undefined)?.full_name as
+        | string
+        | null) ?? null,
+  }));
+  _mentionableUsersCache = { users, ts: now };
+  return users;
+}
+
+export async function getNotifications({
+  limit = 20,
+  unreadOnly = false,
+}: {
+  limit?: number;
+  unreadOnly?: boolean;
+} = {}): Promise<NotificationWithMeta[]> {
+  const sb = await db();
+  const userId = await currentUserId();
+
+  let q = sb
+    .from("notifications")
+    .select("*")
+    .eq("recipient_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (unreadOnly) q = q.is("read_at", null);
+
+  const { data, error } = await q;
+  if (error) throw error;
+  const rows = data ?? [];
+  if (rows.length === 0) return [];
+
+  // Hydrate actor info
+  const adminClient = await admin();
+  const { data: usersData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+  const userMap = new Map<string, { email: string; name: string | null }>(
+    (usersData?.users ?? []).map((u) => [
+      u.id,
+      {
+        email: u.email ?? "",
+        name:
+          ((u.user_metadata as Record<string, unknown> | undefined)?.full_name as
+            | string
+            | null) ?? null,
+      },
+    ])
+  );
+
+  // Hydrate task info
+  const taskIds = [...new Set(rows.map((r) => r.task_id).filter(Boolean))] as string[];
+  let taskMap = new Map<string, { title: string; list_id: string }>();
+  if (taskIds.length > 0) {
+    const { data: tasks } = await sb
+      .from("tasks")
+      .select("id, title, list_id")
+      .in("id", taskIds);
+    taskMap = new Map(
+      (tasks ?? []).map((t) => [t.id, { title: t.title, list_id: t.list_id }])
+    );
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    actor_email: r.actor_id ? (userMap.get(r.actor_id)?.email ?? null) : null,
+    actor_name: r.actor_id ? (userMap.get(r.actor_id)?.name ?? null) : null,
+    task_title: r.task_id ? (taskMap.get(r.task_id)?.title ?? null) : null,
+    task_list_id: r.task_id ? (taskMap.get(r.task_id)?.list_id ?? null) : null,
+  })) as NotificationWithMeta[];
+}
+
+export async function getUnreadNotificationCount(): Promise<number> {
+  const sb = await db();
+  const userId = await currentUserId();
+  const { count, error } = await sb
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("recipient_id", userId)
+    .is("read_at", null);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  const sb = await db();
+  await currentUserId();
+  const { error } = await sb
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("read_at", null);
+  if (error) throw error;
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  const sb = await db();
+  const userId = await currentUserId();
+  const { error } = await sb
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("recipient_id", userId)
+    .is("read_at", null);
+  if (error) throw error;
+}
+
+/**
+ * Insert notifications using the admin (service role) client to bypass RLS.
+ * Errors are caught so the caller action never fails.
+ */
+async function insertNotification(payload: {
+  recipient_id: string;
+  actor_id: string | null;
+  type: "mention" | "assigned" | "comment" | "due_soon";
+  task_id?: string | null;
+  comment_id?: string | null;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  try {
+    const adminClient = await admin();
+    await adminClient.from("notifications").insert({
+      recipient_id: payload.recipient_id,
+      actor_id: payload.actor_id ?? null,
+      type: payload.type,
+      task_id: payload.task_id ?? null,
+      comment_id: payload.comment_id ?? null,
+      metadata: payload.metadata ?? {},
+    });
+  } catch (err) {
+    console.error("[notifications] Failed to insert", payload.type, err);
+  }
+}
+
+/**
+ * Emit mention notifications for each @email@stayd.co found in body.
+ * Skips if the mentioned user is the actor.
+ */
+async function emitMentionNotifications({
+  body,
+  actorId,
+  taskId,
+  commentId,
+}: {
+  body: string;
+  actorId: string;
+  taskId: string;
+  commentId: string;
+}): Promise<void> {
+  const mentionRegex = /@([A-Za-z0-9._%+-]+@stayd\.co)\b/g;
+  const emails: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = mentionRegex.exec(body)) !== null) {
+    emails.push(m[1]);
+  }
+  if (emails.length === 0) return;
+
+  const users = await listMentionableUsers();
+  const excerpt = body.slice(0, 200);
+
+  await Promise.all(
+    emails.map(async (email) => {
+      const target = users.find((u) => u.email === email);
+      if (!target || target.id === actorId) return;
+      await insertNotification({
+        recipient_id: target.id,
+        actor_id: actorId,
+        type: "mention",
+        task_id: taskId,
+        comment_id: commentId,
+        metadata: { excerpt },
+      });
+    })
+  );
+}
+
+/**
+ * Emit assigned notifications for each newly-added assignee.
+ */
+async function emitAssignedNotifications({
+  newAssigneeIds,
+  actorId,
+  taskId,
+  taskTitle,
+}: {
+  newAssigneeIds: string[];
+  actorId: string;
+  taskId: string;
+  taskTitle: string;
+}): Promise<void> {
+  await Promise.all(
+    newAssigneeIds
+      .filter((id) => id !== actorId)
+      .map((recipientId) =>
+        insertNotification({
+          recipient_id: recipientId,
+          actor_id: actorId,
+          type: "assigned",
+          task_id: taskId,
+          metadata: { task_title: taskTitle },
+        })
+      )
+  );
+}
+
+/**
+ * Emit comment notifications for task assignees (except the comment author).
+ * Does not double-notify users who were @mentioned.
+ */
+async function emitCommentNotifications({
+  assigneeIds,
+  actorId,
+  taskId,
+  commentId,
+  mentionedEmails,
+}: {
+  assigneeIds: string[];
+  actorId: string;
+  taskId: string;
+  commentId: string;
+  mentionedEmails: string[];
+}): Promise<void> {
+  // Map mentioned emails to ids to avoid double-notifying
+  const users = mentionedEmails.length > 0 ? await listMentionableUsers() : [];
+  const mentionedIds = new Set(
+    mentionedEmails
+      .map((email) => users.find((u) => u.email === email)?.id)
+      .filter((id): id is string => Boolean(id))
+  );
+
+  await Promise.all(
+    assigneeIds
+      .filter((id) => id !== actorId && !mentionedIds.has(id))
+      .map((recipientId) =>
+        insertNotification({
+          recipient_id: recipientId,
+          actor_id: actorId,
+          type: "comment",
+          task_id: taskId,
+          comment_id: commentId,
+        })
+      )
+  );
 }
 
 // Permission actions live in ./permissions and should be imported directly

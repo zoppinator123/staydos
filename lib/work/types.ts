@@ -331,6 +331,35 @@ export interface CreateAttachmentInput {
   mime_type?: string | null;
 }
 
+// ==================== NOTIFICATIONS ====================
+
+export type NotificationType = "mention" | "assigned" | "comment" | "due_soon";
+
+export interface Notification {
+  id: string;
+  recipient_id: string;
+  actor_id: string | null;
+  type: NotificationType;
+  task_id: string | null;
+  comment_id: string | null;
+  metadata: Record<string, unknown>;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface NotificationWithMeta extends Notification {
+  actor_email: string | null;
+  actor_name: string | null;
+  task_title: string | null;
+  task_list_id: string | null;
+}
+
+export interface MentionableUser {
+  id: string;
+  email: string;
+  name: string | null;
+}
+
 // ==================== QUERY / VIEW TYPES ====================
 export interface TaskFilter {
   list_ids?: string[];

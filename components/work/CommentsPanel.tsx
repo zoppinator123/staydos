@@ -5,6 +5,7 @@ import { addComment, deleteComment, getComments, updateComment } from "@/lib/wor
 import { getCurrentUserClient } from "@/lib/auth/client";
 import { relativeTime } from "@/lib/utils/time";
 import type { CommentWithAuthor } from "@/lib/work/types";
+import { MentionTextarea } from "./MentionTextarea";
 
 interface Props {
   taskId: string;
@@ -38,6 +39,40 @@ function Avatar({ id, name, email }: { id: string; name: string | null; email: s
       title={name ?? email ?? id}
     >
       {avatarInitials(name, email)}
+    </div>
+  );
+}
+
+/**
+ * Render comment body with @email@stayd.co mentions highlighted.
+ */
+function CommentBody({ body }: { body: string }) {
+  const MENTION_RE = /@([A-Za-z0-9._%+-]+@stayd\.co)\b/g;
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = MENTION_RE.exec(body)) !== null) {
+    if (match.index > last) {
+      parts.push(body.slice(last, match.index));
+    }
+    parts.push(
+      <span
+        key={match.index}
+        className="font-medium text-indigo-600 dark:text-indigo-400"
+      >
+        @{match[1]}
+      </span>
+    );
+    last = match.index + match[0].length;
+  }
+  if (last < body.length) {
+    parts.push(body.slice(last));
+  }
+
+  return (
+    <div className="whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
+      {parts}
     </div>
   );
 }
@@ -158,11 +193,11 @@ export function CommentsPanel({ taskId }: Props) {
               {/* Body or edit form */}
               {editingId === c.id ? (
                 <div className="flex flex-col gap-1.5">
-                  <textarea
+                  <MentionTextarea
                     className="w-full rounded border border-zinc-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                     rows={3}
                     value={editBody}
-                    onChange={(e) => setEditBody(e.target.value)}
+                    onChange={setEditBody}
                     autoFocus
                   />
                   <div className="flex gap-2">
@@ -202,7 +237,7 @@ export function CommentsPanel({ taskId }: Props) {
                 </div>
               ) : (
                 <>
-                  <div className="whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">{c.body}</div>
+                  <CommentBody body={c.body} />
                   {c.author_id === currentUserId && (
                     <div className="mt-1.5 flex gap-3">
                       <button
@@ -228,13 +263,12 @@ export function CommentsPanel({ taskId }: Props) {
 
       {/* New comment form */}
       <div className="flex flex-col gap-1.5">
-        <textarea
-          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
-          rows={2}
+        <MentionTextarea
           value={body}
-          onChange={(e) => setBody(e.target.value)}
+          onChange={setBody}
           onKeyDown={handleKeyDown}
-          placeholder="Add a comment… (Ctrl+Enter to submit)"
+          placeholder="Add a comment… (Ctrl+Enter to submit, @ to mention)"
+          rows={2}
         />
         <div className="flex justify-end">
           <button

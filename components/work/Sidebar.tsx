@@ -3,6 +3,7 @@ import { getSpaces, getFolders, getLists } from "@/lib/work/actions";
 import type { Folder, List, Space } from "@/lib/work/types";
 import { SidebarCreateMenu } from "./SidebarCreateMenu";
 import { UserMenu } from "./UserMenu";
+import { NotificationBell } from "./NotificationBell";
 import { getCurrentUser } from "@/lib/auth/actions";
 
 interface Props {
@@ -30,7 +31,10 @@ export async function Sidebar({ activeListId, activeSpaceId }: Props) {
         >
           Staydos
         </Link>
-        <SidebarCreateMenu />
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <SidebarCreateMenu />
+        </div>
       </div>
 
       <nav className="space-y-0.5 px-2 pb-2">
