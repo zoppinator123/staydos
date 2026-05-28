@@ -101,14 +101,46 @@ function TaskRowGroup({
 }
 
 // ---- Droppable group area ----
-function GroupDropZone({ statusId }: { statusId: string }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `group:${statusId}` });
+// (Removed: standalone GroupDropZone — GroupHeaderRow is now the drop target.)
+
+// ---- Droppable group header row (also catches drops to reassign status) ----
+function GroupHeaderRow({
+  status,
+  count,
+  isCollapsed,
+  colCount,
+  onToggle,
+}: {
+  status: Status;
+  count: number;
+  isCollapsed: boolean;
+  colCount: number;
+  onToggle: () => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: `group:${status.id}` });
   return (
-    <tr ref={setNodeRef}>
-      <td
-        colSpan={20}
-        className={`h-8 transition-colors ${isOver ? "bg-accent/10" : ""}`}
-      />
+    <tr
+      ref={setNodeRef}
+      className={`border-b border-border transition-colors ${
+        isOver ? "bg-accent/10" : "bg-surface-alt/50"
+      }`}
+    >
+      <td colSpan={colCount} className="px-3 py-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onToggle}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </button>
+          <StatusPill status={status} size="sm" />
+          <span className="text-xs text-muted-foreground">{count}</span>
+        </div>
+      </td>
     </tr>
   );
 }
@@ -476,32 +508,19 @@ export function ListViewTable({ listId, tasks, statuses, customFields }: ListVie
                     items={sortableIds}
                     strategy={verticalListSortingStrategy}
                   >
-                    {/* Group header */}
-                    <tr className="border-b border-border bg-surface-alt/50">
-                      <td colSpan={colCount} className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() =>
-                              setCollapsed((prev) => ({
-                                ...prev,
-                                [status.id]: !prev[status.id],
-                              }))
-                            }
-                            className="text-muted-foreground hover:text-foreground transition-colors"
-                          >
-                            {isCollapsed ? (
-                              <ChevronRight className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
-                          </button>
-                          <StatusPill status={status} size="sm" />
-                          <span className="text-xs text-muted-foreground">
-                            {grpTasks.length}
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
+                    {/* Group header (also a drop target for status reassignment) */}
+                    <GroupHeaderRow
+                      status={status}
+                      count={grpTasks.length}
+                      isCollapsed={isCollapsed}
+                      colCount={colCount}
+                      onToggle={() =>
+                        setCollapsed((prev) => ({
+                          ...prev,
+                          [status.id]: !prev[status.id],
+                        }))
+                      }
+                    />
 
                     {!isCollapsed && (
                       <>
@@ -531,11 +550,7 @@ export function ListViewTable({ listId, tasks, statuses, customFields }: ListVie
                           );
                         })}
 
-                        {grpTasks.length === 0 && (
-                          <GroupDropZone statusId={status.id} />
-                        )}
-
-                        {/* Inline add */}
+                        {/* Inline add (group header above is the empty-state drop target) */}
                         <AddTaskRow
                           listId={listId}
                           statusId={status.id}

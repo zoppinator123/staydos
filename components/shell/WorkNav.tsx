@@ -17,6 +17,8 @@ import {
   Edit3,
   Archive,
   Trash2,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import {
   createSpace,
@@ -664,11 +666,35 @@ function SpaceNode({ space, folders, lists, activeListId }: SpaceNodeProps) {
   );
 }
 
+const WORKNAV_STORAGE_KEY = "staydos:workNavCollapsed";
+
 export function WorkNav({ spaces, folders, lists }: WorkNavProps) {
   const pathname = usePathname();
   const [addingSpace, setAddingSpace] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [collapsed, setCollapsed] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Load persisted collapse state after hydration
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(WORKNAV_STORAGE_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (stored === "1") setCollapsed(true);
+    } catch {}
+    setHydrated(true);
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((v) => {
+      const next = !v;
+      try {
+        window.localStorage.setItem(WORKNAV_STORAGE_KEY, next ? "1" : "0");
+      } catch {}
+      return next;
+    });
+  }
 
   // Determine active list id from path
   const listMatch = pathname.match(/\/work\/list\/([^/]+)/);
@@ -683,17 +709,45 @@ export function WorkNav({ spaces, folders, lists }: WorkNavProps) {
     });
   }
 
+  // When collapsed (after hydration), render a slim rail with just a toggle button
+  if (hydrated && collapsed) {
+    return (
+      <nav
+        className="hidden md:flex flex-col w-[40px] shrink-0 items-center py-3 transition-[width] duration-150"
+        style={{ background: "rgb(21 24 22)" }}
+        aria-label="Work navigation (collapsed)"
+      >
+        <button
+          onClick={toggleCollapsed}
+          aria-label="Expand work navigation"
+          title="Expand"
+          className="flex h-7 w-7 items-center justify-center rounded text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-colors"
+        >
+          <PanelLeftOpen size={15} />
+        </button>
+      </nav>
+    );
+  }
+
   return (
     <nav
-      className="hidden md:flex flex-col w-[250px] shrink-0 overflow-y-auto py-3"
+      className="hidden md:flex flex-col w-[220px] shrink-0 overflow-y-auto py-3 transition-[width] duration-150"
       style={{ background: "rgb(21 24 22)" }}
       aria-label="Work navigation"
     >
       {/* Header */}
-      <div className="px-4 pb-1 pt-1">
+      <div className="flex items-center justify-between px-4 pb-1 pt-1">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 select-none">
           WORK
         </p>
+        <button
+          onClick={toggleCollapsed}
+          aria-label="Collapse work navigation"
+          title="Collapse"
+          className="flex h-6 w-6 items-center justify-center rounded text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-colors"
+        >
+          <PanelLeftClose size={13} />
+        </button>
       </div>
 
       {/* All Tasks link */}
