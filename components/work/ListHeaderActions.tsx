@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal, Edit3, Archive, Trash2, Type, FileText } from "lucide-react";
 import { updateList, archiveList, deleteList } from "@/lib/work/actions";
@@ -19,6 +20,15 @@ export function ListHeaderActions({ list }: ListHeaderActionsProps) {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   // Modals
   const [renameOpen, setRenameOpen] = useState(false);
@@ -32,16 +42,52 @@ export function ListHeaderActions({ list }: ListHeaderActionsProps) {
   const [typeVal, setTypeVal] = useState<ListType>((list.type as ListType) ?? "private");
   const [loading, setLoading] = useState(false);
 
-  // Close menu on outside click
+  // Close menu on outside click (button + popover are in different DOM trees because of portal)
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setShowMenu(false);
-      }
+      const t = e.target as Node;
+      if (menuRef.current?.contains(t)) return;
+      if (popoverRef.current?.contains(t)) return;
+      setShowMenu(false);
     }
     window.addEventListener("mousedown", handler);
     return () => window.removeEventListener("mousedown", handler);
   }, []);
+
+  // Position the popover relative to the trigger, clamped to viewport
+  useLayoutEffect(() => {
+    if (!showMenu || !buttonRef.current) {
+      setMenuPos(null);
+      return;
+    }
+    function reposition() {
+      const btn = buttonRef.current;
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const menuWidth = 192; // w-48
+      const menuHeight = 240; // approx — clamp below
+      const gap = 6;
+      let top = rect.bottom + gap;
+      let left = rect.right - menuWidth;
+      // Clamp horizontally
+      if (left < 8) left = 8;
+      if (left + menuWidth > window.innerWidth - 8) {
+        left = window.innerWidth - menuWidth - 8;
+      }
+      // Flip vertically if not enough room below
+      if (top + menuHeight > window.innerHeight - 8) {
+        top = Math.max(8, rect.top - menuHeight - gap);
+      }
+      setMenuPos({ top, left });
+    }
+    reposition();
+    window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", reposition, true);
+    return () => {
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", reposition, true);
+    };
+  }, [showMenu]);
 
   async function handleRename() {
     if (!renameVal.trim()) return;
@@ -102,55 +148,61 @@ export function ListHeaderActions({ list }: ListHeaderActionsProps) {
     <>
       <div className="relative" ref={menuRef}>
         <button
+          ref={buttonRef}
           className="ml-auto flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           onClick={() => setShowMenu((v) => !v)}
           title="List settings"
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
-
-        {showMenu && (
-          <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-card border border-border bg-surface shadow-card-hover overflow-hidden">
-            <button
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
-              onClick={() => { setShowMenu(false); setRenameVal(list.name); setRenameOpen(true); }}
-            >
-              <Edit3 className="h-3.5 w-3.5 text-muted-foreground" />
-              Rename
-            </button>
-            <button
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
-              onClick={() => { setShowMenu(false); setDescVal(list.description ?? ""); setDescOpen(true); }}
-            >
-              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-              Edit description
-            </button>
-            <button
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
-              onClick={() => { setShowMenu(false); setTypeOpen(true); }}
-            >
-              <Type className="h-3.5 w-3.5 text-muted-foreground" />
-              Change type
-            </button>
-            <div className="my-1 border-t border-border" />
-            <button
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
-              onClick={() => { setShowMenu(false); handleArchive(); }}
-              disabled={loading}
-            >
-              <Archive className="h-3.5 w-3.5 text-muted-foreground" />
-              Archive list
-            </button>
-            <button
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-danger/10 transition-colors"
-              onClick={() => { setShowMenu(false); setDeleteOpen(true); }}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Delete list
-            </button>
-          </div>
-        )}
       </div>
+
+      {mounted && showMenu && menuPos && createPortal(
+        <div
+          ref={popoverRef}
+          className="fixed z-[100] w-48 rounded-card border border-border bg-surface shadow-card-hover overflow-hidden"
+          style={{ top: menuPos.top, left: menuPos.left }}
+        >
+          <button
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+            onClick={() => { setShowMenu(false); setRenameVal(list.name); setRenameOpen(true); }}
+          >
+            <Edit3 className="h-3.5 w-3.5 text-muted-foreground" />
+            Rename
+          </button>
+          <button
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+            onClick={() => { setShowMenu(false); setDescVal(list.description ?? ""); setDescOpen(true); }}
+          >
+            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+            Edit description
+          </button>
+          <button
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+            onClick={() => { setShowMenu(false); setTypeOpen(true); }}
+          >
+            <Type className="h-3.5 w-3.5 text-muted-foreground" />
+            Change type
+          </button>
+          <div className="my-1 border-t border-border" />
+          <button
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+            onClick={() => { setShowMenu(false); handleArchive(); }}
+            disabled={loading}
+          >
+            <Archive className="h-3.5 w-3.5 text-muted-foreground" />
+            Archive list
+          </button>
+          <button
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-danger/10 transition-colors"
+            onClick={() => { setShowMenu(false); setDeleteOpen(true); }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete list
+          </button>
+        </div>,
+        document.body
+      )}
 
       {/* Rename modal */}
       <Modal open={renameOpen} onClose={() => setRenameOpen(false)} title="Rename List">
