@@ -1,26 +1,153 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Haven OS design tokens
+   --------------------------------------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --color-background: 255 255 255;
+  --color-surface: 255 255 255;
+  --color-surface-alt: 237 240 238;       /* Sage */
+  --color-muted: 241 243 242;
+  --color-muted-foreground: 115 120 118;
+  --color-foreground: 66 66 66;           /* Charcoal */
+  --color-accent: 255 86 78;              /* Haven Coral #FF564E */
+  --color-accent-foreground: 255 255 255;
+  --color-accent-soft: 255 228 226;
+  --color-border: 226 228 226;
+  --color-ring: 255 86 78;
+  --color-success: 16 185 129;
+  --color-warning: 245 158 11;
+  --color-danger: 239 68 68;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --radius-card: 14px;
+  --radius-pill: 30px;
+
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 1px rgb(15 23 42 / 0.03);
+  --shadow-card-hover: 0 4px 10px rgb(15 23 42 / 0.08), 0 2px 4px rgb(15 23 42 / 0.04);
+
+  --motion-fade: 200ms ease-out;
+  --motion-slide: 240ms ease-out;
+  --motion-drop: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --color-background: 22 24 23;
+    --color-surface: 28 31 30;
+    --color-surface-alt: 36 40 38;
+    --color-muted: 40 44 42;
+    --color-muted-foreground: 160 167 163;
+    --color-foreground: 237 240 238;
+    --color-accent: 255 118 111;
+    --color-accent-foreground: 255 255 255;
+    --color-accent-soft: 80 36 34;
+    --color-border: 50 54 52;
+    --color-ring: 255 118 111;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-card-hover: 0 4px 10px rgb(0 0 0 / 0.5);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme inline {
+  /* Map CSS vars into Tailwind v4 named colors so utilities like bg-surface,
+     text-foreground, border-border, ring-accent, etc. work. */
+  --color-background: rgb(var(--color-background));
+  --color-surface: rgb(var(--color-surface));
+  --color-surface-alt: rgb(var(--color-surface-alt));
+  --color-muted: rgb(var(--color-muted));
+  --color-muted-foreground: rgb(var(--color-muted-foreground));
+  --color-foreground: rgb(var(--color-foreground));
+  --color-accent: rgb(var(--color-accent));
+  --color-accent-foreground: rgb(var(--color-accent-foreground));
+  --color-accent-soft: rgb(var(--color-accent-soft));
+  --color-border: rgb(var(--color-border));
+  --color-ring: rgb(var(--color-ring));
+  --color-success: rgb(var(--color-success));
+  --color-warning: rgb(var(--color-warning));
+  --color-danger: rgb(var(--color-danger));
+
+  --radius-card: var(--radius-card);
+  --radius-pill: var(--radius-pill);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-card-hover: var(--shadow-card-hover);
+
+  --font-display: "Jost", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Raleway", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+   --------------------------------------------------------------------------- */
+html, body {
+  background-color: rgb(var(--color-background));
+  color: rgb(var(--color-foreground));
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "ss02";
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: rgb(var(--color-foreground));
+}
+
+/* Ensure form inputs render at least 16px on iOS to prevent auto-zoom */
+input, textarea, select {
+  font-size: 16px;
+}
+@media (min-width: 768px) {
+  input, textarea, select {
+    font-size: 14px;
+  }
+}
+
+/* Keyboard key chips */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 5px;
+  border: 1px solid rgb(var(--color-border));
+  background: rgb(var(--color-surface-alt));
+  color: rgb(var(--color-muted-foreground));
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1;
+}
+
+/* Subtle scrollbar */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-border));
+  border-radius: 10px;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgb(var(--color-muted-foreground) / 0.6); }
+
+/* Helpful animation keyframes */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+.animate-fade-in { animation: fade-in var(--motion-fade) both; }
+.animate-slide-up { animation: slide-up var(--motion-slide) both; }
+.animate-pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in, .animate-slide-up, .animate-pulse-dot { animation: none; }
 }

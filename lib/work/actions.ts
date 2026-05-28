@@ -29,6 +29,9 @@ import type {
   TaskActivityEntry,
   TaskQuery,
   TaskWithMeta,
+  TimeEntry,
+  TimeEntryWithUser,
+  WatcherWithUser,
   UpdateChecklistItemInput,
   UpdateCommentInput,
   UpdateFolderInput,
@@ -337,6 +340,13 @@ export async function reorderLists(
 
 // ==================== STATUSES ====================
 
+const CATEGORY_PRIORITY: Record<string, number> = {
+  todo: 0,
+  in_progress: 1,
+  done: 2,
+  closed: 3,
+};
+
 export async function getStatuses(listId: string): Promise<Status[]> {
   const sb = await db();
   const { data, error } = await sb
@@ -345,7 +355,15 @@ export async function getStatuses(listId: string): Promise<Status[]> {
     .eq("list_id", listId)
     .order("order");
   if (error) throw error;
-  return data ?? [];
+  const rows = data ?? [];
+  // Sort: category-priority first (todo → in_progress → done → closed), then by "order"
+  rows.sort((a, b) => {
+    const ca = CATEGORY_PRIORITY[a.category] ?? 99;
+    const cb = CATEGORY_PRIORITY[b.category] ?? 99;
+    if (ca !== cb) return ca - cb;
+    return a.order - b.order;
+  });
+  return rows;
 }
 
 export async function createStatus(input: CreateStatusInput): Promise<Status> {
@@ -552,6 +570,52 @@ export async function updateTask(id: string, input: UpdateTaskInput): Promise<Ta
     }
   }
 
+  // Notify watchers + assignees on status change
+  if ("status_id" in input && JSON.stringify(prev.status_id) !== JSON.stringify(data.status_id)) {
+    try {
+      const allRecipients = new Set<string>([...((data.assignee_ids as string[]) ?? [])]);
+      const { data: watcherRows } = await sb.from("task_watchers").select("user_id").eq("task_id", id);
+      for (const w of watcherRows ?? []) allRecipients.add(w.user_id);
+      allRecipients.delete(userId);
+      await Promise.all(
+        [...allRecipients].map((rid) =>
+          insertNotification({
+            recipient_id: rid,
+            actor_id: userId,
+            type: "task_status_changed",
+            task_id: id,
+            metadata: { task_title: data.title },
+          })
+        )
+      );
+    } catch (err) {
+      console.error("[notifications] updateTask status error", err);
+    }
+  }
+
+  // Notify watchers + assignees on due_date change
+  if ("due_date" in input && JSON.stringify(prev.due_date) !== JSON.stringify(data.due_date)) {
+    try {
+      const allRecipients = new Set<string>([...((data.assignee_ids as string[]) ?? [])]);
+      const { data: watcherRows } = await sb.from("task_watchers").select("user_id").eq("task_id", id);
+      for (const w of watcherRows ?? []) allRecipients.add(w.user_id);
+      allRecipients.delete(userId);
+      await Promise.all(
+        [...allRecipients].map((rid) =>
+          insertNotification({
+            recipient_id: rid,
+            actor_id: userId,
+            type: "task_due_changed",
+            task_id: id,
+            metadata: { task_title: data.title, due_date: data.due_date },
+          })
+        )
+      );
+    } catch (err) {
+      console.error("[notifications] updateTask due_date error", err);
+    }
+  }
+
   revalidatePath("/work");
   return data;
 }
@@ -597,6 +661,33 @@ export async function completeTask(id: string): Promise<Task> {
     action: "completed",
     to_value: { completed_at: now },
   });
+
+  // Notify watchers + assignees (excluding actor) with task_completed
+  try {
+    const allRecipients = new Set<string>([
+      ...((task.assignee_ids as string[]) ?? []),
+    ]);
+    // Get watchers
+    const { data: watcherRows } = await (await db())
+      .from("task_watchers")
+      .select("user_id")
+      .eq("task_id", id);
+    for (const w of watcherRows ?? []) allRecipients.add(w.user_id);
+    allRecipients.delete(userId);
+    await Promise.all(
+      [...allRecipients].map((rid) =>
+        insertNotification({
+          recipient_id: rid,
+          actor_id: userId,
+          type: "task_completed",
+          task_id: id,
+          metadata: { task_title: task.title },
+        })
+      )
+    );
+  } catch (err) {
+    console.error("[notifications] completeTask error", err);
+  }
 
   // Spawn next occurrence if recurring.
   if (task.recurrence_rule && task.due_date) {
@@ -662,12 +753,45 @@ export async function uncompleteTask(id: string): Promise<Task> {
 export async function archiveTask(id: string): Promise<void> {
   const sb = await db();
   const userId = await currentUserId();
+
+  // Load task for notification context
+  const { data: task } = await sb.from("tasks").select("title, assignee_ids").eq("id", id).maybeSingle();
+
   const { error } = await sb
     .from("tasks")
     .update({ archived_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw error;
   await logActivity({ task_id: id, actor_id: userId, action: "archived" });
+
+  // Notify watchers + assignees (excluding actor) with task_archived
+  if (task) {
+    try {
+      const allRecipients = new Set<string>([
+        ...((task.assignee_ids as string[]) ?? []),
+      ]);
+      const { data: watcherRows } = await sb
+        .from("task_watchers")
+        .select("user_id")
+        .eq("task_id", id);
+      for (const w of watcherRows ?? []) allRecipients.add(w.user_id);
+      allRecipients.delete(userId);
+      await Promise.all(
+        [...allRecipients].map((rid) =>
+          insertNotification({
+            recipient_id: rid,
+            actor_id: userId,
+            type: "task_archived",
+            task_id: id,
+            metadata: { task_title: task.title },
+          })
+        )
+      );
+    } catch (err) {
+      console.error("[notifications] archiveTask error", err);
+    }
+  }
+
   revalidatePath("/work");
 }
 
@@ -1072,10 +1196,18 @@ export async function addComment({
       .single();
     const assigneeIds: string[] = (task?.assignee_ids as string[] | null) ?? [];
 
+    // Get watchers and merge with assignees
+    const { data: watcherRows } = await (await db())
+      .from("task_watchers")
+      .select("user_id")
+      .eq("task_id", taskId);
+    const watcherIds = (watcherRows ?? []).map((w: { user_id: string }) => w.user_id);
+    const mergedIds = [...new Set([...assigneeIds, ...watcherIds])];
+
     await Promise.all([
       emitMentionNotifications({ body, actorId: userId, taskId, commentId: data.id }),
       emitCommentNotifications({
-        assigneeIds,
+        assigneeIds: mergedIds,
         actorId: userId,
         taskId,
         commentId: data.id,
@@ -1349,7 +1481,7 @@ export async function markAllNotificationsRead(): Promise<void> {
 async function insertNotification(payload: {
   recipient_id: string;
   actor_id: string | null;
-  type: "mention" | "assigned" | "comment" | "due_soon";
+  type: string;
   task_id?: string | null;
   comment_id?: string | null;
   metadata?: Record<string, unknown>;
@@ -1621,6 +1753,291 @@ export async function getDashboardSummary(
     byAssignee,
     completedPerDayLast30,
   };
+}
+
+// ==================== TIME ENTRIES ====================
+
+export async function startTimer(
+  taskId: string,
+  description?: string
+): Promise<TimeEntry> {
+  const sb = await db();
+  const userId = await currentUserId();
+  const { data, error } = await sb
+    .from("time_entries")
+    .insert({
+      task_id: taskId,
+      user_id: userId,
+      description: description ?? null,
+      started_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error(
+        "You already have a running timer. Stop it before starting a new one."
+      );
+    }
+    throw error;
+  }
+  revalidatePath("/work");
+  return data as TimeEntry;
+}
+
+export async function stopTimer(entryId: string): Promise<TimeEntry> {
+  const sb = await db();
+  const userId = await currentUserId();
+  // Load the entry first
+  const { data: entry, error: fetchErr } = await sb
+    .from("time_entries")
+    .select("*")
+    .eq("id", entryId)
+    .eq("user_id", userId)
+    .is("ended_at", null)
+    .single();
+  if (fetchErr) throw fetchErr;
+
+  const now = new Date();
+  const startedAt = new Date(entry.started_at);
+  const durationSeconds = Math.round((now.getTime() - startedAt.getTime()) / 1000);
+
+  const { data, error } = await sb
+    .from("time_entries")
+    .update({
+      ended_at: now.toISOString(),
+      duration_seconds: durationSeconds,
+    })
+    .eq("id", entryId)
+    .eq("user_id", userId)
+    .select()
+    .single();
+  if (error) throw error;
+  revalidatePath("/work");
+  return data as TimeEntry;
+}
+
+export async function getOpenTimer(): Promise<TimeEntry | null> {
+  const sb = await db();
+  const userId = await currentUserId();
+  const { data, error } = await sb
+    .from("time_entries")
+    .select("*")
+    .eq("user_id", userId)
+    .is("ended_at", null)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as TimeEntry | null);
+}
+
+export async function getTimeEntries(taskId: string): Promise<TimeEntryWithUser[]> {
+  const sb = await db();
+  const { data, error } = await sb
+    .from("time_entries")
+    .select("*")
+    .eq("task_id", taskId)
+    .order("started_at", { ascending: false });
+  if (error) throw error;
+  const rows = (data ?? []) as TimeEntry[];
+  if (rows.length === 0) return [];
+
+  const adminClient = await admin();
+  const { data: usersData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+  const userMap = new Map<string, { email: string; name: string | null }>(
+    (usersData?.users ?? []).map((u) => [
+      u.id,
+      {
+        email: u.email ?? "",
+        name:
+          ((u.user_metadata as Record<string, unknown> | undefined)?.full_name as
+            | string
+            | null) ?? null,
+      },
+    ])
+  );
+
+  return rows.map((r) => ({
+    ...r,
+    user_email: userMap.get(r.user_id)?.email ?? null,
+    user_name: userMap.get(r.user_id)?.name ?? null,
+  }));
+}
+
+export async function createManualTimeEntry({
+  taskId,
+  startedAt,
+  endedAt,
+  description,
+}: {
+  taskId: string;
+  startedAt: string;
+  endedAt: string;
+  description?: string;
+}): Promise<TimeEntry> {
+  const sb = await db();
+  const userId = await currentUserId();
+  const start = new Date(startedAt);
+  const end = new Date(endedAt);
+  const durationSeconds = Math.round((end.getTime() - start.getTime()) / 1000);
+
+  const { data, error } = await sb
+    .from("time_entries")
+    .insert({
+      task_id: taskId,
+      user_id: userId,
+      description: description ?? null,
+      started_at: startedAt,
+      ended_at: endedAt,
+      duration_seconds: durationSeconds,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  revalidatePath("/work");
+  return data as TimeEntry;
+}
+
+export async function deleteTimeEntry(id: string): Promise<void> {
+  const sb = await db();
+  const userId = await currentUserId();
+  const { error } = await sb
+    .from("time_entries")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", userId);
+  if (error) throw error;
+  revalidatePath("/work");
+}
+
+// ==================== WATCHERS ====================
+
+export async function getWatchers(taskId: string): Promise<WatcherWithUser[]> {
+  const sb = await db();
+  const { data, error } = await sb
+    .from("task_watchers")
+    .select("*")
+    .eq("task_id", taskId);
+  if (error) throw error;
+  const rows = data ?? [];
+  if (rows.length === 0) return [];
+
+  const adminClient = await admin();
+  const { data: usersData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+  const userMap = new Map<string, { email: string; name: string | null }>(
+    (usersData?.users ?? []).map((u) => [
+      u.id,
+      {
+        email: u.email ?? "",
+        name:
+          ((u.user_metadata as Record<string, unknown> | undefined)?.full_name as
+            | string
+            | null) ?? null,
+      },
+    ])
+  );
+
+  return rows.map((r) => ({
+    task_id: r.task_id as string,
+    user_id: r.user_id as string,
+    created_at: r.created_at as string,
+    user_email: userMap.get(r.user_id as string)?.email ?? null,
+    user_name: userMap.get(r.user_id as string)?.name ?? null,
+  }));
+}
+
+export async function addWatcher(taskId: string, userId: string): Promise<void> {
+  const sb = await db();
+  await currentUserId();
+  const { error } = await sb
+    .from("task_watchers")
+    .upsert({ task_id: taskId, user_id: userId }, { onConflict: "task_id,user_id" });
+  if (error) throw error;
+  revalidatePath("/work");
+}
+
+export async function removeWatcher(taskId: string, userId: string): Promise<void> {
+  const sb = await db();
+  await currentUserId();
+  const { error } = await sb
+    .from("task_watchers")
+    .delete()
+    .eq("task_id", taskId)
+    .eq("user_id", userId);
+  if (error) throw error;
+  revalidatePath("/work");
+}
+
+// ==================== PERSONAL LIST / RPC ====================
+
+export async function ensurePersonalList(): Promise<string> {
+  const sb = await db();
+  const { data, error } = await sb.rpc("ensure_personal_list");
+  if (error) throw error;
+  return data as string;
+}
+
+export async function deleteStatusWithReassign(
+  statusId: string,
+  targetStatusId: string
+): Promise<void> {
+  const sb = await db();
+  await currentUserId();
+  const { error } = await sb.rpc("delete_status_with_reassign", {
+    p_status_id: statusId,
+    p_target_status_id: targetStatusId,
+  });
+  if (error) throw error;
+  revalidatePath("/work");
+}
+
+// ==================== CSV EXPORT ====================
+
+export async function exportTasksCsv(query: TaskQuery): Promise<string> {
+  // Fetch all tasks matching the query (no pagination)
+  const unlimitedQuery: TaskQuery = {
+    ...query,
+    limit: 500,
+    offset: 0,
+  };
+  const { tasks } = await queryTasks(unlimitedQuery);
+
+  const escape = (v: unknown): string => {
+    if (v === null || v === undefined) return "";
+    const str = String(v);
+    if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const headers = [
+    "ID",
+    "Title",
+    "Status",
+    "Priority",
+    "Due",
+    "Assignees",
+    "List",
+    "Space",
+    "Created",
+    "Completed",
+  ];
+
+  const rows = tasks.map((t) => [
+    escape(t.id),
+    escape(t.title),
+    escape(t.status_name ?? ""),
+    escape(t.priority),
+    escape(t.due_date ? t.due_date.slice(0, 10) : ""),
+    escape((t.assignee_ids ?? []).join("; ")),
+    escape(t.list_name ?? ""),
+    escape(t.list_space_id ?? ""),
+    escape(t.created_at ? t.created_at.slice(0, 10) : ""),
+    escape(t.completed_at ? t.completed_at.slice(0, 10) : ""),
+  ]);
+
+  const lines = [headers.join(","), ...rows.map((r) => r.join(","))];
+  return lines.join("\n");
 }
 
 // Permission actions live in ./permissions and should be imported directly

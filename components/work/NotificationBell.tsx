@@ -44,11 +44,21 @@ function notificationText(n: NotificationWithMeta): string {
     case "mention":
       return `${actor} mentioned you on ${task}`;
     case "assigned":
+    case "task_assigned":
       return `${actor} assigned you to ${task}`;
     case "comment":
+    case "task_comment_added":
       return `${actor} commented on ${task}`;
     case "due_soon":
       return `${task} is due soon`;
+    case "task_status_changed":
+      return `${actor} updated the status of ${task}`;
+    case "task_due_changed":
+      return `${actor} changed the due date of ${task}`;
+    case "task_completed":
+      return `${actor} completed ${task}`;
+    case "task_archived":
+      return `${actor} archived ${task}`;
     default:
       return `New notification`;
   }

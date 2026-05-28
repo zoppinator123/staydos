@@ -331,9 +331,50 @@ export interface CreateAttachmentInput {
   mime_type?: string | null;
 }
 
+// ==================== TIME ENTRIES ====================
+
+export interface TimeEntry {
+  id: string;
+  task_id: string;
+  user_id: string;
+  description: string | null;
+  started_at: string;
+  ended_at: string | null;
+  duration_seconds: number | null;
+  created_at: string;
+}
+
+export interface TimeEntryWithUser extends TimeEntry {
+  user_email: string | null;
+  user_name: string | null;
+}
+
+// ==================== WATCHERS ====================
+
+export interface Watcher {
+  task_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface WatcherWithUser extends Watcher {
+  user_email: string | null;
+  user_name: string | null;
+}
+
 // ==================== NOTIFICATIONS ====================
 
-export type NotificationType = "mention" | "assigned" | "comment" | "due_soon";
+export type NotificationType =
+  | "mention"
+  | "assigned"
+  | "comment"
+  | "due_soon"
+  | "task_assigned"
+  | "task_status_changed"
+  | "task_due_changed"
+  | "task_comment_added"
+  | "task_completed"
+  | "task_archived";
 
 export interface Notification {
   id: string;
