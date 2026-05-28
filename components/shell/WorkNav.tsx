@@ -395,22 +395,51 @@ function FolderRowMenu({
 }
 
 // ---- Popover wrapper with click-outside ----
+// Renders fixed-position to escape any parent overflow clipping. Anchored to the
+// triggering button's bounding rect; opens below + right-aligned by default.
 function Popover({
   children,
   onClose,
-  className = "",
+  anchorRef,
 }: {
   children: React.ReactNode;
   onClose: () => void;
-  className?: string;
+  anchorRef: React.RefObject<HTMLElement | null>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useClickOutside(ref, onClose);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    function compute() {
+      const el = anchorRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const menuW = 180;
+      // Place below the anchor, opening to the right with a small leftward bias
+      // so it doesn't extend off-screen.
+      let left = r.left;
+      const maxLeft = window.innerWidth - menuW - 8;
+      if (left > maxLeft) left = maxLeft;
+      if (left < 8) left = 8;
+      setPos({ top: r.bottom + 4, left });
+    }
+    compute();
+    window.addEventListener("resize", compute);
+    window.addEventListener("scroll", compute, true);
+    return () => {
+      window.removeEventListener("resize", compute);
+      window.removeEventListener("scroll", compute, true);
+    };
+  }, [anchorRef]);
+
+  if (!pos) return null;
 
   return (
     <div
       ref={ref}
-      className={`absolute z-50 min-w-[160px] rounded-md border border-white/10 bg-zinc-900 shadow-xl ${className}`}
+      style={{ position: "fixed", top: pos.top, left: pos.left }}
+      className="z-[100] min-w-[180px] rounded-md border border-white/10 bg-zinc-900 shadow-xl"
       onClick={(e) => e.stopPropagation()}
     >
       {children}
@@ -421,8 +450,7 @@ function Popover({
 // ---- ListRow with hover "..." ----
 function ListRow({ list, active }: { list: List; active: boolean }) {
   const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  useClickOutside(menuRef, () => setShowMenu(false));
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div className="group relative flex items-center">
@@ -438,19 +466,18 @@ function ListRow({ list, active }: { list: List; active: boolean }) {
         <span className="truncate">{list.name}</span>
       </Link>
       {/* ... button on hover */}
-      <div className="relative" ref={menuRef}>
-        <button
-          className="mr-1 hidden group-hover:flex h-5 w-5 items-center justify-center rounded text-zinc-500 hover:text-zinc-300 hover:bg-white/10 transition-colors"
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu((v) => !v); }}
-        >
-          <MoreHorizontal size={11} />
-        </button>
-        {showMenu && (
-          <Popover onClose={() => setShowMenu(false)} className="right-0 top-full mt-1">
-            <ListRowMenu list={list} onClose={() => setShowMenu(false)} />
-          </Popover>
-        )}
-      </div>
+      <button
+        ref={btnRef}
+        className="mr-1 hidden group-hover:flex h-5 w-5 items-center justify-center rounded text-zinc-500 hover:text-zinc-300 hover:bg-white/10 transition-colors"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu((v) => !v); }}
+      >
+        <MoreHorizontal size={11} />
+      </button>
+      {showMenu && (
+        <Popover onClose={() => setShowMenu(false)} anchorRef={btnRef}>
+          <ListRowMenu list={list} onClose={() => setShowMenu(false)} />
+        </Popover>
+      )}
     </div>
   );
 }
@@ -467,8 +494,7 @@ function FolderNode({
 }) {
   const [expanded, setExpanded] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  useClickOutside(menuRef, () => setShowMenu(false));
+  const folderBtnRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div>
@@ -486,19 +512,18 @@ function FolderNode({
           <span className="truncate text-xs text-zinc-400">{folder.name}</span>
         </button>
         {/* ... button on hover */}
-        <div className="relative" ref={menuRef}>
-          <button
-            className="mr-1 hidden group-hover:flex h-5 w-5 items-center justify-center rounded text-zinc-500 hover:text-zinc-300 hover:bg-white/10 transition-colors"
-            onClick={(e) => { e.stopPropagation(); setShowMenu((v) => !v); }}
-          >
-            <MoreHorizontal size={11} />
-          </button>
-          {showMenu && (
-            <Popover onClose={() => setShowMenu(false)} className="right-0 top-full mt-1">
-              <FolderRowMenu folder={folder} onClose={() => setShowMenu(false)} />
-            </Popover>
-          )}
-        </div>
+        <button
+          ref={folderBtnRef}
+          className="mr-1 hidden group-hover:flex h-5 w-5 items-center justify-center rounded text-zinc-500 hover:text-zinc-300 hover:bg-white/10 transition-colors"
+          onClick={(e) => { e.stopPropagation(); setShowMenu((v) => !v); }}
+        >
+          <MoreHorizontal size={11} />
+        </button>
+        {showMenu && (
+          <Popover onClose={() => setShowMenu(false)} anchorRef={folderBtnRef}>
+            <FolderRowMenu folder={folder} onClose={() => setShowMenu(false)} />
+          </Popover>
+        )}
       </div>
       {expanded && (
         <div className="pl-4">
@@ -525,8 +550,7 @@ function SpaceNode({ space, folders, lists, activeListId }: SpaceNodeProps) {
   const [newListName, setNewListName] = useState("");
   const [isPending, startTransition] = useTransition();
   const [showSpaceMenu, setShowSpaceMenu] = useState(false);
-  const spaceMenuRef = useRef<HTMLDivElement>(null);
-  useClickOutside(spaceMenuRef, () => setShowSpaceMenu(false));
+  const spaceBtnRef = useRef<HTMLButtonElement>(null);
 
   const spaceFolders = folders.filter((f) => f.space_id === space.id);
   const rootLists = lists.filter((l) => l.space_id === space.id && !l.folder_id);
@@ -562,20 +586,19 @@ function SpaceNode({ space, folders, lists, activeListId }: SpaceNodeProps) {
         </button>
         <div className="hidden group-hover:flex items-center gap-0.5">
           {/* Space settings popover */}
-          <div className="relative" ref={spaceMenuRef}>
-            <button
-              aria-label="Space settings"
-              className="flex h-5 w-5 items-center justify-center rounded text-zinc-500 hover:text-zinc-300"
-              onClick={(e) => { e.stopPropagation(); setShowSpaceMenu((v) => !v); }}
-            >
-              <Settings size={11} />
-            </button>
-            {showSpaceMenu && (
-              <Popover onClose={() => setShowSpaceMenu(false)} className="right-0 top-full mt-1">
-                <SpaceSettingsMenu space={space} onClose={() => setShowSpaceMenu(false)} />
-              </Popover>
-            )}
-          </div>
+          <button
+            ref={spaceBtnRef}
+            aria-label="Space settings"
+            className="flex h-5 w-5 items-center justify-center rounded text-zinc-500 hover:text-zinc-300"
+            onClick={(e) => { e.stopPropagation(); setShowSpaceMenu((v) => !v); }}
+          >
+            <Settings size={11} />
+          </button>
+          {showSpaceMenu && (
+            <Popover onClose={() => setShowSpaceMenu(false)} anchorRef={spaceBtnRef}>
+              <SpaceSettingsMenu space={space} onClose={() => setShowSpaceMenu(false)} />
+            </Popover>
+          )}
           <button
             onClick={() => setAddingList(true)}
             aria-label="Add list"

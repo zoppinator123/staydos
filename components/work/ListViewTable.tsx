@@ -499,19 +499,6 @@ export function ListViewTable({ listId, tasks, statuses, customFields }: ListVie
                           <span className="text-xs text-muted-foreground">
                             {grpTasks.length}
                           </span>
-                          <button
-                            className="ml-2 flex items-center gap-1 rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                            onClick={() => {
-                              // Expand the add row — find the AddTaskRow for this status
-                              const input = document.querySelector<HTMLButtonElement>(
-                                `[data-add-group="${status.id}"]`
-                              );
-                              input?.click();
-                            }}
-                          >
-                            <Plus className="h-3 w-3" />
-                            Add task
-                          </button>
                         </div>
                       </td>
                     </tr>
