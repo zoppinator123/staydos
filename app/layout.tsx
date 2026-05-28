@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
-import { Jost, Raleway } from "next/font/google";
+import { Montserrat, Inter } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
 
-const fontDisplay = Jost({
+const fontDisplay = Montserrat({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["700", "800", "900"],
   display: "swap",
 });
 
-const fontBody = Raleway({
+const fontBody = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
 });
 

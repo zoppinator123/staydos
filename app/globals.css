@@ -1,23 +1,33 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   Haven OS design tokens
+   Stayd Collective design tokens (mirrored from stayd.co)
+   Palette: monochrome luxury — near-black ink on warm off-white surfaces.
    --------------------------------------------------------------------------- */
 :root {
-  --color-background: 255 255 255;
-  --color-surface: 255 255 255;
-  --color-surface-alt: 237 240 238;       /* Sage */
-  --color-muted: 241 243 242;
-  --color-muted-foreground: 115 120 118;
-  --color-foreground: 66 66 66;           /* Charcoal */
-  --color-accent: 255 86 78;              /* Haven Coral #FF564E */
+  --color-background: 255 255 255;        /* #ffffff */
+  --color-surface: 255 255 255;           /* #ffffff cards */
+  --color-surface-alt: 247 247 247;       /* #f7f7f7 sub-surface */
+  --color-muted: 242 242 242;             /* #f2f2f2 wash */
+  --color-muted-foreground: 102 102 102;  /* #666666 secondary text */
+  --color-foreground: 17 17 17;           /* #111111 primary ink */
+  --color-accent: 10 10 10;               /* #0a0a0a near-black accent */
   --color-accent-foreground: 255 255 255;
-  --color-accent-soft: 255 228 226;
-  --color-border: 226 228 226;
-  --color-ring: 255 86 78;
+  --color-accent-soft: 239 239 239;       /* #efefef tint */
+  --color-border: 224 224 224;            /* #e0e0e0 hard border */
+  --color-border-soft: 239 239 239;       /* #efefef hairline */
+  --color-ring: 17 17 17;
   --color-success: 16 185 129;
   --color-warning: 245 158 11;
   --color-danger: 239 68 68;
+
+  /* Stayd brand surface scale */
+  --color-ink: 8 8 8;                     /* #080808 deepest */
+  --color-near-black: 17 17 17;           /* #111111 */
+  --color-charcoal: 34 34 34;             /* #222222 */
+  --color-dark: 51 51 51;                 /* #333333 */
+  --color-mid: 102 102 102;               /* #666666 */
+  --color-muted-soft: 153 153 153;        /* #999999 */
 
   --radius-card: 14px;
   --radius-pill: 30px;
@@ -32,19 +42,20 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-background: 22 24 23;
-    --color-surface: 28 31 30;
-    --color-surface-alt: 36 40 38;
-    --color-muted: 40 44 42;
-    --color-muted-foreground: 160 167 163;
-    --color-foreground: 237 240 238;
-    --color-accent: 255 118 111;
-    --color-accent-foreground: 255 255 255;
-    --color-accent-soft: 80 36 34;
-    --color-border: 50 54 52;
-    --color-ring: 255 118 111;
-    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow-card-hover: 0 4px 10px rgb(0 0 0 / 0.5);
+    --color-background: 8 8 8;            /* #080808 */
+    --color-surface: 17 17 17;            /* #111111 */
+    --color-surface-alt: 22 22 22;
+    --color-muted: 34 34 34;              /* #222222 */
+    --color-muted-foreground: 153 153 153;
+    --color-foreground: 255 255 255;
+    --color-accent: 255 255 255;
+    --color-accent-foreground: 10 10 10;
+    --color-accent-soft: 34 34 34;
+    --color-border: 51 51 51;             /* #333333 */
+    --color-border-soft: 34 34 34;
+    --color-ring: 255 255 255;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.5);
+    --shadow-card-hover: 0 4px 12px rgb(0 0 0 / 0.6);
   }
 }
 
@@ -61,7 +72,14 @@
   --color-accent-foreground: rgb(var(--color-accent-foreground));
   --color-accent-soft: rgb(var(--color-accent-soft));
   --color-border: rgb(var(--color-border));
+  --color-border-soft: rgb(var(--color-border-soft));
   --color-ring: rgb(var(--color-ring));
+  --color-ink: rgb(var(--color-ink));
+  --color-near-black: rgb(var(--color-near-black));
+  --color-charcoal: rgb(var(--color-charcoal));
+  --color-dark: rgb(var(--color-dark));
+  --color-mid: rgb(var(--color-mid));
+  --color-muted-soft: rgb(var(--color-muted-soft));
   --color-success: rgb(var(--color-success));
   --color-warning: rgb(var(--color-warning));
   --color-danger: rgb(var(--color-danger));
@@ -72,8 +90,8 @@
   --shadow-card: var(--shadow-card);
   --shadow-card-hover: var(--shadow-card-hover);
 
-  --font-display: "Jost", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-  --font-sans: "Raleway", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Montserrat", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
 }
 
@@ -89,8 +107,8 @@ html, body {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   color: rgb(var(--color-foreground));
 }
 
