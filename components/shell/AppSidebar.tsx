@@ -10,6 +10,7 @@ import {
   Briefcase,
   Users,
   Settings as SettingsIcon,
+  LayoutDashboard,
 } from "lucide-react";
 
 interface NavItem {
@@ -28,6 +29,7 @@ const SECTIONS: NavSection[] = [
   {
     title: "OVERVIEW",
     items: [
+      { label: "The Board", href: "/work", exact: true, icon: <LayoutDashboard size={14} /> },
       { label: "My Tasks", href: "/my-tasks", icon: <CheckSquare size={14} /> },
     ],
   },
