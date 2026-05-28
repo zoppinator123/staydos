@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { X, Flag, Calendar, Archive, Trash2, UserCircle } from "lucide-react";
+import { X, Flag, Calendar, Archive, Trash2, UserPlus } from "lucide-react";
 import { updateTask, archiveTask, deleteTask } from "@/lib/work/actions";
+import { AssigneePicker } from "./AssigneePicker";
 import type { Status, TaskPriority } from "@/lib/work/types";
 
 interface BulkActionsBarProps {
   selectedIds: string[];
   statuses: Status[];
+  listId: string;
   onClear: () => void;
   onChange: () => void;
 }
@@ -21,10 +23,24 @@ const PRIORITIES: { value: TaskPriority; label: string; color: string }[] = [
   { value: "none", label: "None", color: "#d4d4d8" },
 ];
 
-export function BulkActionsBar({ selectedIds, statuses, onClear, onChange }: BulkActionsBarProps) {
+export function BulkActionsBar({ selectedIds, statuses, listId, onClear, onChange }: BulkActionsBarProps) {
   const router = useRouter();
-  const [openMenu, setOpenMenu] = useState<"status" | "priority" | "date" | null>(null);
+  const [openMenu, setOpenMenu] = useState<"status" | "priority" | "date" | "assignees" | null>(null);
   const [loading, setLoading] = useState(false);
+  const [assigneeValues, setAssigneeValues] = useState<string[]>([]);
+
+  const assigneeMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close assignee popover on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (assigneeMenuRef.current && !assigneeMenuRef.current.contains(e.target as Node)) {
+        if (openMenu === "assignees") setOpenMenu(null);
+      }
+    }
+    window.addEventListener("mousedown", handler);
+    return () => window.removeEventListener("mousedown", handler);
+  }, [openMenu]);
 
   if (selectedIds.length === 0) return null;
 
@@ -37,6 +53,18 @@ export function BulkActionsBar({ selectedIds, statuses, onClear, onChange }: Bul
     } finally {
       setLoading(false);
       setOpenMenu(null);
+    }
+  }
+
+  async function handleAssigneeChange(ids: string[]) {
+    setAssigneeValues(ids);
+    setLoading(true);
+    try {
+      await Promise.all(selectedIds.map((id) => updateTask(id, { assignee_ids: ids })));
+      router.refresh();
+      onChange();
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -152,15 +180,26 @@ export function BulkActionsBar({ selectedIds, statuses, onClear, onChange }: Bul
           )}
         </div>
 
-        {/* Assignees placeholder */}
-        <button
-          className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          disabled={loading}
-          title="Assign (open tasks individually)"
-        >
-          <UserCircle className="h-3.5 w-3.5" />
-          Assign
-        </button>
+        {/* Gap 4: Assignees picker */}
+        <div className="relative" ref={assigneeMenuRef}>
+          <button
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            onClick={() => setOpenMenu(openMenu === "assignees" ? null : "assignees")}
+            disabled={loading}
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+            Assignees
+          </button>
+          {openMenu === "assignees" && (
+            <div className="absolute bottom-full mb-2 left-0 z-50 w-64 rounded-card border border-border bg-surface shadow-card-hover">
+              <AssigneePicker
+                listId={listId}
+                value={assigneeValues}
+                onChange={handleAssigneeChange}
+              />
+            </div>
+          )}
+        </div>
 
         <div className="h-4 w-px bg-border mx-1" />
 

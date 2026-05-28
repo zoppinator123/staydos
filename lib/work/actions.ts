@@ -2042,3 +2042,11 @@ export async function exportTasksCsv(query: TaskQuery): Promise<string> {
 
 // Permission actions live in ./permissions and should be imported directly
 // (re-exports are not allowed in "use server" files).
+
+// ==================== AUTH HELPERS ====================
+
+export async function getCurrentUserId(): Promise<string | null> {
+  const { getCurrentUser } = await import("@/lib/auth/current-user");
+  const user = await getCurrentUser();
+  return user?.id ?? null;
+}

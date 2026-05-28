@@ -8,6 +8,7 @@ import {
 // NOTE: ListViewTable is owned by the other subagent.
 // We import the stub here; the other subagent will replace it with the full implementation.
 import { ListViewTable } from "@/components/work/ListViewTable";
+import { ListHeaderActions } from "@/components/work/ListHeaderActions";
 
 export default async function ListPage({
   params,
@@ -39,9 +40,10 @@ export default async function ListPage({
               <p className="text-xs text-muted-foreground mt-0.5">{list.description}</p>
             )}
           </div>
-          <span className="ml-auto inline-flex items-center rounded-pill px-2.5 py-1 text-[11px] font-medium border border-border text-muted-foreground">
+          <span className="inline-flex items-center rounded-pill px-2.5 py-1 text-[11px] font-medium border border-border text-muted-foreground">
             {list.type}
           </span>
+          <ListHeaderActions list={list} />
         </div>
         <p className="text-xs text-muted-foreground mt-1">
           {tasks.length} task{tasks.length !== 1 ? "s" : ""}

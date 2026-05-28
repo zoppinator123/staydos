@@ -568,6 +568,7 @@ export function ListViewTable({ listId, tasks, statuses, customFields }: ListVie
       <BulkActionsBar
         selectedIds={[...selectedIds]}
         statuses={statuses}
+        listId={listId}
         onClear={() => setSelectedIds(new Set())}
         onChange={onChange}
       />

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronRight,
   ChevronDown,
@@ -13,8 +13,24 @@ import {
   Plus,
   Settings,
   LayoutList,
+  MoreHorizontal,
+  Edit3,
+  Archive,
+  Trash2,
 } from "lucide-react";
-import { createSpace, createList } from "@/lib/work/actions";
+import {
+  createSpace,
+  createList,
+  updateSpace,
+  archiveSpace,
+  deleteSpace,
+  updateList,
+  archiveList,
+  deleteList,
+  updateFolder,
+  archiveFolder,
+  deleteFolder,
+} from "@/lib/work/actions";
 import type { Space, Folder as FolderType, List } from "@/lib/work/types";
 
 interface WorkNavProps {
@@ -36,6 +52,466 @@ function getListIcon(type: string) {
   }
 }
 
+// ---- Reusable inline rename input ----
+function InlineRename({
+  defaultValue,
+  onSave,
+  onCancel,
+}: {
+  defaultValue: string;
+  onSave: (val: string) => void;
+  onCancel: () => void;
+}) {
+  const [val, setVal] = useState(defaultValue);
+  return (
+    <input
+      autoFocus
+      value={val}
+      onChange={(e) => setVal(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && val.trim()) onSave(val.trim());
+        if (e.key === "Escape") onCancel();
+      }}
+      onBlur={() => { if (val.trim() && val.trim() !== defaultValue) onSave(val.trim()); else onCancel(); }}
+      className="flex-1 rounded bg-white/5 border border-white/10 px-1.5 py-0.5 text-xs text-zinc-300 outline-none focus:border-white/20 min-w-0"
+    />
+  );
+}
+
+// ---- Confirm inline dialog ----
+function ConfirmInline({
+  label,
+  onConfirm,
+  onCancel,
+}: {
+  label: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="px-2 py-1 flex flex-col gap-1">
+      <p className="text-[10px] text-zinc-400">{label}</p>
+      <div className="flex gap-1">
+        <button
+          className="flex-1 rounded bg-red-700 px-1.5 py-0.5 text-[10px] text-white hover:bg-red-600"
+          onClick={onConfirm}
+        >
+          Delete
+        </button>
+        <button
+          className="flex-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-zinc-300 hover:bg-white/15"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---- useClickOutside hook ----
+function useClickOutside(ref: React.RefObject<HTMLElement | null>, cb: () => void) {
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) cb();
+    }
+    window.addEventListener("mousedown", handler);
+    return () => window.removeEventListener("mousedown", handler);
+  }, [ref, cb]);
+}
+
+// ---- Space popover ----
+function SpaceSettingsMenu({
+  space,
+  onClose,
+}: {
+  space: Space;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [mode, setMode] = useState<"menu" | "rename" | "color" | "confirmDelete">("menu");
+  const [colorVal, setColorVal] = useState(space.color ?? "#6366f1");
+
+  async function handleRename(name: string) {
+    await updateSpace(space.id, { name });
+    onClose();
+    router.refresh();
+  }
+
+  async function handleColorSave() {
+    await updateSpace(space.id, { color: colorVal });
+    onClose();
+    router.refresh();
+  }
+
+  async function handleArchive() {
+    await archiveSpace(space.id);
+    onClose();
+    router.refresh();
+  }
+
+  async function handleDelete() {
+    await deleteSpace(space.id);
+    onClose();
+    router.refresh();
+  }
+
+  if (mode === "rename") {
+    return (
+      <div className="px-2 py-2">
+        <p className="text-[10px] text-zinc-500 mb-1">Rename space</p>
+        <InlineRename
+          defaultValue={space.name}
+          onSave={handleRename}
+          onCancel={onClose}
+        />
+      </div>
+    );
+  }
+
+  if (mode === "color") {
+    return (
+      <div className="px-2 py-2 flex flex-col gap-2">
+        <p className="text-[10px] text-zinc-500">Space color</p>
+        <input
+          type="color"
+          value={colorVal}
+          onChange={(e) => setColorVal(e.target.value)}
+          className="w-full h-8 rounded cursor-pointer border border-white/10 bg-transparent"
+        />
+        <div className="flex gap-1">
+          <button
+            className="flex-1 rounded bg-accent px-1.5 py-0.5 text-[10px] text-white hover:opacity-90"
+            onClick={handleColorSave}
+          >
+            Save
+          </button>
+          <button
+            className="flex-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-zinc-300 hover:bg-white/15"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === "confirmDelete") {
+    return (
+      <ConfirmInline
+        label={`Delete "${space.name}"?`}
+        onConfirm={handleDelete}
+        onCancel={() => setMode("menu")}
+      />
+    );
+  }
+
+  return (
+    <div className="py-1">
+      <button
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+        onClick={() => setMode("rename")}
+      >
+        <Edit3 size={11} />
+        Rename
+      </button>
+      <button
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+        onClick={() => setMode("color")}
+      >
+        <span className="h-3 w-3 rounded-full shrink-0" style={{ background: space.color ?? "#6366f1" }} />
+        Edit color
+      </button>
+      <div className="my-1 border-t border-white/10" />
+      <button
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+        onClick={handleArchive}
+      >
+        <Archive size={11} />
+        Archive
+      </button>
+      <button
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-red-900/30 transition-colors"
+        onClick={() => setMode("confirmDelete")}
+      >
+        <Trash2 size={11} />
+        Delete
+      </button>
+    </div>
+  );
+}
+
+// ---- List row "..." popover ----
+function ListRowMenu({
+  list,
+  onClose,
+}: {
+  list: List;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [mode, setMode] = useState<"menu" | "rename" | "confirmDelete">("menu");
+
+  async function handleRename(name: string) {
+    await updateList(list.id, { name });
+    onClose();
+    router.refresh();
+  }
+
+  async function handleArchive() {
+    await archiveList(list.id);
+    onClose();
+    router.refresh();
+  }
+
+  async function handleDelete() {
+    await deleteList(list.id);
+    onClose();
+    router.refresh();
+  }
+
+  if (mode === "rename") {
+    return (
+      <div className="px-2 py-2">
+        <p className="text-[10px] text-zinc-500 mb-1">Rename list</p>
+        <InlineRename defaultValue={list.name} onSave={handleRename} onCancel={onClose} />
+      </div>
+    );
+  }
+
+  if (mode === "confirmDelete") {
+    return (
+      <ConfirmInline
+        label={`Delete "${list.name}"?`}
+        onConfirm={handleDelete}
+        onCancel={() => setMode("menu")}
+      />
+    );
+  }
+
+  return (
+    <div className="py-1">
+      <button
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+        onClick={() => setMode("rename")}
+      >
+        <Edit3 size={11} />
+        Rename
+      </button>
+      <div className="my-1 border-t border-white/10" />
+      <button
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+        onClick={handleArchive}
+      >
+        <Archive size={11} />
+        Archive
+      </button>
+      <button
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-red-900/30 transition-colors"
+        onClick={() => setMode("confirmDelete")}
+      >
+        <Trash2 size={11} />
+        Delete
+      </button>
+    </div>
+  );
+}
+
+// ---- Folder row "..." popover ----
+function FolderRowMenu({
+  folder,
+  onClose,
+}: {
+  folder: FolderType;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [mode, setMode] = useState<"menu" | "rename" | "confirmDelete">("menu");
+
+  async function handleRename(name: string) {
+    await updateFolder(folder.id, { name });
+    onClose();
+    router.refresh();
+  }
+
+  async function handleArchive() {
+    await archiveFolder(folder.id);
+    onClose();
+    router.refresh();
+  }
+
+  async function handleDelete() {
+    await deleteFolder(folder.id);
+    onClose();
+    router.refresh();
+  }
+
+  if (mode === "rename") {
+    return (
+      <div className="px-2 py-2">
+        <p className="text-[10px] text-zinc-500 mb-1">Rename folder</p>
+        <InlineRename defaultValue={folder.name} onSave={handleRename} onCancel={onClose} />
+      </div>
+    );
+  }
+
+  if (mode === "confirmDelete") {
+    return (
+      <ConfirmInline
+        label={`Delete "${folder.name}"?`}
+        onConfirm={handleDelete}
+        onCancel={() => setMode("menu")}
+      />
+    );
+  }
+
+  return (
+    <div className="py-1">
+      <button
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+        onClick={() => setMode("rename")}
+      >
+        <Edit3 size={11} />
+        Rename
+      </button>
+      <div className="my-1 border-t border-white/10" />
+      <button
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+        onClick={handleArchive}
+      >
+        <Archive size={11} />
+        Archive
+      </button>
+      <button
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-red-900/30 transition-colors"
+        onClick={() => setMode("confirmDelete")}
+      >
+        <Trash2 size={11} />
+        Delete
+      </button>
+    </div>
+  );
+}
+
+// ---- Popover wrapper with click-outside ----
+function Popover({
+  children,
+  onClose,
+  className = "",
+}: {
+  children: React.ReactNode;
+  onClose: () => void;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useClickOutside(ref, onClose);
+
+  return (
+    <div
+      ref={ref}
+      className={`absolute z-50 min-w-[160px] rounded-md border border-white/10 bg-zinc-900 shadow-xl ${className}`}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ---- ListRow with hover "..." ----
+function ListRow({ list, active }: { list: List; active: boolean }) {
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(menuRef, () => setShowMenu(false));
+
+  return (
+    <div className="group relative flex items-center">
+      <Link
+        href={`/work/list/${list.id}`}
+        className={`flex flex-1 items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors ${
+          active
+            ? "bg-white/10 text-white"
+            : "text-zinc-400 hover:text-white hover:bg-white/5"
+        }`}
+      >
+        {getListIcon(list.type)}
+        <span className="truncate">{list.name}</span>
+      </Link>
+      {/* ... button on hover */}
+      <div className="relative" ref={menuRef}>
+        <button
+          className="mr-1 hidden group-hover:flex h-5 w-5 items-center justify-center rounded text-zinc-500 hover:text-zinc-300 hover:bg-white/10 transition-colors"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu((v) => !v); }}
+        >
+          <MoreHorizontal size={11} />
+        </button>
+        {showMenu && (
+          <Popover onClose={() => setShowMenu(false)} className="right-0 top-full mt-1">
+            <ListRowMenu list={list} onClose={() => setShowMenu(false)} />
+          </Popover>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---- FolderNode with hover "..." ----
+function FolderNode({
+  folder,
+  lists,
+  activeListId,
+}: {
+  folder: FolderType;
+  lists: List[];
+  activeListId: string | null;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(menuRef, () => setShowMenu(false));
+
+  return (
+    <div>
+      <div className="group relative flex items-center">
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="flex flex-1 items-center gap-1.5 px-2 py-1.5 text-left rounded-md hover:bg-white/5 transition-colors"
+        >
+          {expanded ? (
+            <ChevronDown size={12} className="text-zinc-500 shrink-0" />
+          ) : (
+            <ChevronRight size={12} className="text-zinc-500 shrink-0" />
+          )}
+          <Folder size={13} className="text-zinc-500 shrink-0" />
+          <span className="truncate text-xs text-zinc-400">{folder.name}</span>
+        </button>
+        {/* ... button on hover */}
+        <div className="relative" ref={menuRef}>
+          <button
+            className="mr-1 hidden group-hover:flex h-5 w-5 items-center justify-center rounded text-zinc-500 hover:text-zinc-300 hover:bg-white/10 transition-colors"
+            onClick={(e) => { e.stopPropagation(); setShowMenu((v) => !v); }}
+          >
+            <MoreHorizontal size={11} />
+          </button>
+          {showMenu && (
+            <Popover onClose={() => setShowMenu(false)} className="right-0 top-full mt-1">
+              <FolderRowMenu folder={folder} onClose={() => setShowMenu(false)} />
+            </Popover>
+          )}
+        </div>
+      </div>
+      {expanded && (
+        <div className="pl-4">
+          {lists.map((list) => (
+            <ListRow key={list.id} list={list} active={list.id === activeListId} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---- SpaceNode with settings icon ----
 interface SpaceNodeProps {
   space: Space;
   folders: FolderType[];
@@ -48,6 +524,9 @@ function SpaceNode({ space, folders, lists, activeListId }: SpaceNodeProps) {
   const [addingList, setAddingList] = useState(false);
   const [newListName, setNewListName] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [showSpaceMenu, setShowSpaceMenu] = useState(false);
+  const spaceMenuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(spaceMenuRef, () => setShowSpaceMenu(false));
 
   const spaceFolders = folders.filter((f) => f.space_id === space.id);
   const rootLists = lists.filter((l) => l.space_id === space.id && !l.folder_id);
@@ -82,12 +561,21 @@ function SpaceNode({ space, folders, lists, activeListId }: SpaceNodeProps) {
           <span className="truncate text-sm text-zinc-300 font-medium">{space.name}</span>
         </button>
         <div className="hidden group-hover:flex items-center gap-0.5">
-          <button
-            aria-label="Space settings"
-            className="flex h-5 w-5 items-center justify-center rounded text-zinc-500 hover:text-zinc-300"
-          >
-            <Settings size={11} />
-          </button>
+          {/* Space settings popover */}
+          <div className="relative" ref={spaceMenuRef}>
+            <button
+              aria-label="Space settings"
+              className="flex h-5 w-5 items-center justify-center rounded text-zinc-500 hover:text-zinc-300"
+              onClick={(e) => { e.stopPropagation(); setShowSpaceMenu((v) => !v); }}
+            >
+              <Settings size={11} />
+            </button>
+            {showSpaceMenu && (
+              <Popover onClose={() => setShowSpaceMenu(false)} className="right-0 top-full mt-1">
+                <SpaceSettingsMenu space={space} onClose={() => setShowSpaceMenu(false)} />
+              </Popover>
+            )}
+          </div>
           <button
             onClick={() => setAddingList(true)}
             aria-label="Add list"
@@ -150,58 +638,6 @@ function SpaceNode({ space, folders, lists, activeListId }: SpaceNodeProps) {
         </div>
       )}
     </div>
-  );
-}
-
-function FolderNode({
-  folder,
-  lists,
-  activeListId,
-}: {
-  folder: FolderType;
-  lists: List[];
-  activeListId: string | null;
-}) {
-  const [expanded, setExpanded] = useState(true);
-
-  return (
-    <div>
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-1.5 w-full px-2 py-1.5 text-left rounded-md hover:bg-white/5 transition-colors"
-      >
-        {expanded ? (
-          <ChevronDown size={12} className="text-zinc-500 shrink-0" />
-        ) : (
-          <ChevronRight size={12} className="text-zinc-500 shrink-0" />
-        )}
-        <Folder size={13} className="text-zinc-500 shrink-0" />
-        <span className="truncate text-xs text-zinc-400">{folder.name}</span>
-      </button>
-      {expanded && (
-        <div className="pl-4">
-          {lists.map((list) => (
-            <ListRow key={list.id} list={list} active={list.id === activeListId} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ListRow({ list, active }: { list: List; active: boolean }) {
-  return (
-    <Link
-      href={`/work/list/${list.id}`}
-      className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors ${
-        active
-          ? "bg-white/10 text-white"
-          : "text-zinc-400 hover:text-white hover:bg-white/5"
-      }`}
-    >
-      {getListIcon(list.type)}
-      <span className="truncate">{list.name}</span>
-    </Link>
   );
 }
 

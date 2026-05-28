@@ -48,7 +48,9 @@ import {
   archiveTask,
   deleteTask,
   getStatuses,
+  getCurrentUserId,
 } from "@/lib/work/actions";
+import { AssigneePicker } from "./AssigneePicker";
 import type {
   Task,
   Status,
@@ -178,6 +180,9 @@ export function TaskDetailModal({ taskId, onClose, onChange }: TaskDetailModalPr
   const [showMenu, setShowMenu] = useState(false);
   const [showStatusPicker, setShowStatusPicker] = useState(false);
   const [showPriorityPicker, setShowPriorityPicker] = useState(false);
+  const [showAssigneePicker, setShowAssigneePicker] = useState(false);
+  const [showWatcherPicker, setShowWatcherPicker] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [timerRunning, setTimerRunning] = useState(false);
 
   // Manual time entry form
@@ -193,7 +198,23 @@ export function TaskDetailModal({ taskId, onClose, onChange }: TaskDetailModalPr
   const [recurrenceFreq, setRecurrenceFreq] = useState<RecurrenceFrequency>("weekly");
   const [recurrenceInterval, setRecurrenceInterval] = useState(1);
 
+  const assigneePickerRef = useRef<HTMLDivElement>(null);
+  const watcherPickerRef = useRef<HTMLDivElement>(null);
   const saveDescTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Close assignee/watcher pickers on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (assigneePickerRef.current && !assigneePickerRef.current.contains(e.target as Node)) {
+        setShowAssigneePicker(false);
+      }
+      if (watcherPickerRef.current && !watcherPickerRef.current.contains(e.target as Node)) {
+        setShowWatcherPicker(false);
+      }
+    }
+    window.addEventListener("mousedown", handler);
+    return () => window.removeEventListener("mousedown", handler);
+  }, []);
 
   // Initial load
   useEffect(() => {
@@ -201,6 +222,8 @@ export function TaskDetailModal({ taskId, onClose, onChange }: TaskDetailModalPr
     (async () => {
       setLoading(true);
       try {
+        // Fetch current user id once
+        getCurrentUserId().then(setCurrentUserId);
         const t = await getTask(taskId);
         if (!t) return;
         setTask(t);
@@ -590,10 +613,34 @@ export function TaskDetailModal({ taskId, onClose, onChange }: TaskDetailModalPr
             </SidebarField>
 
             <SidebarField label="Assignees">
-              <div className="flex flex-wrap gap-1">
-                {task.assignee_ids.map((id) => (
-                  <Avatar key={id} name={id} size={24} />
-                ))}
+              <div className="relative" ref={assigneePickerRef}>
+                <button
+                  className="flex flex-wrap gap-1 hover:opacity-80 transition-opacity"
+                  onClick={() => setShowAssigneePicker((v) => !v)}
+                  title="Edit assignees"
+                >
+                  {task.assignee_ids.length === 0 ? (
+                    <span className="text-xs text-muted-foreground italic">None — click to assign</span>
+                  ) : (
+                    task.assignee_ids.map((id) => (
+                      <Avatar key={id} name={id} size={24} />
+                    ))
+                  )}
+                </button>
+                {showAssigneePicker && (
+                  <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-card border border-border bg-surface shadow-card-hover">
+                    <AssigneePicker
+                      listId={task.list_id}
+                      value={task.assignee_ids}
+                      onChange={async (ids) => {
+                        await updateTask(task.id, { assignee_ids: ids });
+                        setTask((prev) => prev ? { ...prev, assignee_ids: ids } : prev);
+                        router.refresh();
+                        onChange();
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </SidebarField>
 
@@ -637,33 +684,72 @@ export function TaskDetailModal({ taskId, onClose, onChange }: TaskDetailModalPr
             </SidebarField>
 
             <SidebarField label="Watchers">
-              <div className="flex flex-wrap gap-1">
-                {watchers.map((w) => (
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap gap-1">
+                  {watchers.map((w) => (
+                    <button
+                      key={w.user_id}
+                      className="group relative"
+                      title="Remove watcher"
+                      onClick={async () => {
+                        await removeWatcher(task.id, w.user_id);
+                        setWatchers((prev) => prev.filter((x) => x.user_id !== w.user_id));
+                        router.refresh();
+                      }}
+                    >
+                      <Avatar name={w.user_name ?? w.user_email ?? w.user_id} size={24} />
+                      <span className="absolute -top-0.5 -right-0.5 hidden group-hover:flex h-3 w-3 items-center justify-center rounded-full bg-danger text-white text-[8px]">✕</span>
+                    </button>
+                  ))}
+                  {/* Add self as watcher button */}
+                  {currentUserId && !watchers.find((w) => w.user_id === currentUserId) && (
+                    <button
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted-foreground/20 transition-colors"
+                      title="Watch task"
+                      onClick={async () => {
+                        if (!currentUserId) return;
+                        await addWatcher(task.id, currentUserId);
+                        const w = await getWatchers(task.id);
+                        setWatchers(w);
+                        router.refresh();
+                      }}
+                    >
+                      <Eye className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                {/* Add watchers picker */}
+                <div className="relative" ref={watcherPickerRef}>
                   <button
-                    key={w.user_id}
-                    className="group relative"
-                    title="Remove watcher"
-                    onClick={async () => {
-                      await removeWatcher(task.id, w.user_id);
-                      setWatchers((prev) => prev.filter((x) => x.user_id !== w.user_id));
-                      router.refresh();
-                    }}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setShowWatcherPicker((v) => !v)}
                   >
-                    <Avatar name={w.user_name ?? w.user_email ?? w.user_id} size={24} />
+                    <Plus className="h-3 w-3" />
+                    Add watchers…
                   </button>
-                ))}
-                <button
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted-foreground/20 transition-colors"
-                  title="Watch task"
-                  onClick={async () => {
-                    await addWatcher(task.id, "me");
-                    const w = await getWatchers(task.id);
-                    setWatchers(w);
-                    router.refresh();
-                  }}
-                >
-                  <Eye className="h-3 w-3" />
-                </button>
+                  {showWatcherPicker && (
+                    <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-card border border-border bg-surface shadow-card-hover">
+                      <AssigneePicker
+                        listId={task.list_id}
+                        value={watchers.map((w) => w.user_id)}
+                        onChange={async (ids) => {
+                          const currentIds = watchers.map((w) => w.user_id);
+                          // Add new watchers
+                          for (const id of ids) {
+                            if (!currentIds.includes(id)) await addWatcher(task.id, id);
+                          }
+                          // Remove unchecked watchers
+                          for (const id of currentIds) {
+                            if (!ids.includes(id)) await removeWatcher(task.id, id);
+                          }
+                          const w = await getWatchers(task.id);
+                          setWatchers(w);
+                          router.refresh();
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </SidebarField>
 
