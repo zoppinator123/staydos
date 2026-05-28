@@ -32,18 +32,8 @@ const SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "GTM",
-    items: [
-      { label: "Pitches", href: "/coming-soon?title=Pitches" },
-      { label: "Lead Magnets", href: "/coming-soon?title=Lead+Magnets" },
-      { label: "Content Studio", href: "/coming-soon?title=Content+Studio" },
-    ],
-  },
-  {
     title: "ADMIN",
     items: [
-      { label: "Northstar Scorecard", href: "/coming-soon?title=Northstar+Scorecard" },
-      { label: "Agents [Beta]", href: "/coming-soon?title=Agents" },
       { label: "HR", href: "/coming-soon?title=HR" },
       { label: "Settings", href: "/admin/settings" },
     ],
