@@ -18,7 +18,6 @@ const SECTIONS: NavSection[] = [
   {
     title: "OVERVIEW",
     items: [
-      { label: "The Board", href: "/work", exact: true },
       { label: "My Tasks", href: "/my-tasks" },
     ],
   },
@@ -26,9 +25,6 @@ const SECTIONS: NavSection[] = [
     title: "OPERATIONS",
     items: [
       { label: "Project Management", href: "/work/tasks" },
-      { label: "Properties", href: "/coming-soon?title=Properties" },
-      { label: "Onboarding", href: "/coming-soon?title=Onboarding" },
-      { label: "Lost Items", href: "/coming-soon?title=Lost+Items" },
     ],
   },
   {
