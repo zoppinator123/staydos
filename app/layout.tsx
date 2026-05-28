@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Montserrat, Inter } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
+import { ThemeProvider, ThemeScript } from "@/components/theme/ThemeProvider";
 
 const fontDisplay = Montserrat({
   variable: "--font-display",
@@ -31,9 +32,15 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${fontDisplay.variable} ${fontBody.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        <ThemeScript />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
-        <ToastProvider>{children}</ToastProvider>
+        <ThemeProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

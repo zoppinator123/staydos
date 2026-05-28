@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Search, HelpCircle, Clock, ChevronDown } from "lucide-react";
 import { NotificationBell } from "@/components/work/NotificationBell";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 interface TopBarProps {
   userEmail?: string;
@@ -93,6 +94,9 @@ export function TopBar({ userEmail = "", userName }: TopBarProps) {
         >
           <HelpCircle size={16} />
         </button>
+
+        {/* Theme toggle */}
+        <ThemeToggle variant="topbar" />
 
         {/* Notification bell — styled for dark mode */}
         <div className="[&_button]:text-zinc-400 [&_button:hover]:bg-white/8 [&_button:hover]:text-zinc-200">

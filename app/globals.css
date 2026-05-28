@@ -40,24 +40,28 @@
   --motion-drop: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: 8 8 8;            /* #080808 */
-    --color-surface: 17 17 17;            /* #111111 */
-    --color-surface-alt: 22 22 22;
-    --color-muted: 34 34 34;              /* #222222 */
-    --color-muted-foreground: 153 153 153;
-    --color-foreground: 255 255 255;
-    --color-accent: 255 255 255;
-    --color-accent-foreground: 10 10 10;
-    --color-accent-soft: 34 34 34;
-    --color-border: 51 51 51;             /* #333333 */
-    --color-border-soft: 34 34 34;
-    --color-ring: 255 255 255;
-    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.5);
-    --shadow-card-hover: 0 4px 12px rgb(0 0 0 / 0.6);
-  }
+/* Dark mode is applied class-based (html.dark) so users can toggle
+   independently from their OS preference. */
+html.dark {
+  --color-background: 8 8 8;            /* #080808 */
+  --color-surface: 17 17 17;            /* #111111 */
+  --color-surface-alt: 22 22 22;
+  --color-muted: 34 34 34;              /* #222222 */
+  --color-muted-foreground: 153 153 153;
+  --color-foreground: 255 255 255;
+  --color-accent: 255 255 255;
+  --color-accent-foreground: 10 10 10;
+  --color-accent-soft: 34 34 34;
+  --color-border: 51 51 51;             /* #333333 */
+  --color-border-soft: 34 34 34;
+  --color-ring: 255 255 255;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.5);
+  --shadow-card-hover: 0 4px 12px rgb(0 0 0 / 0.6);
 }
+
+/* Prevent FOUC: set color-scheme so the browser uses the right form/scrollbar styling */
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
 
 @theme inline {
   /* Map CSS vars into Tailwind v4 named colors so utilities like bg-surface,
