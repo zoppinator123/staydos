@@ -8,6 +8,7 @@ import {
   PanelLeftOpen,
   CheckSquare,
   Briefcase,
+  Calculator,
   Users,
   Settings as SettingsIcon,
   LayoutDashboard,
@@ -37,6 +38,7 @@ const SECTIONS: NavSection[] = [
     title: "OPERATIONS",
     items: [
       { label: "Project Management", href: "/work/tasks", icon: <Briefcase size={14} /> },
+      { label: "Deal Builder", href: "/deal-builder", icon: <Calculator size={14} /> },
     ],
   },
   {

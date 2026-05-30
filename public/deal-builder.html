@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Renjoy Tuck-In Deal Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{--red:#F04C3B;--burgundy:#75241C;--blush:#FFEFEF;--charcoal:#242427;--ink:#242427;--muted:#6f6a68;--line:#e7dcdb;--card:#fff;--good:#1f7a4d}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Figtree',sans-serif;background:#faf6f5;color:var(--ink);line-height:1.45;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:30px 22px 80px}
+  header{border-bottom:3px solid var(--charcoal);padding-bottom:16px;margin-bottom:22px}
+  .kick{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--red);font-weight:700}
+  h1{font-size:32px;font-weight:900;letter-spacing:-.02em;margin-top:4px}
+  .sub{color:var(--muted);font-size:14.5px;margin-top:6px;max-width:840px}
+  h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--burgundy);font-weight:800;margin:26px 0 12px;display:flex;align-items:center;gap:10px}
+  h2::after{content:"";flex:1;height:1px;background:var(--line)}
+  .subhead{font-size:12px;color:var(--muted);font-weight:600;margin:-6px 0 10px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .pickrow{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(135px,1fr))}
+  .pick{text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:11px;padding:11px 13px;cursor:pointer;transition:.12s;font-family:inherit}
+  .pick:hover{border-color:var(--red)}
+  .pick.on{border:2px solid var(--red);background:var(--blush)}
+  .pick .pn{font-size:14px;font-weight:800;color:var(--charcoal)}
+  .pick .pd{font-size:11px;color:var(--muted);font-weight:600;margin-top:2px;line-height:1.3}
+  .grid{display:grid;gap:14px}.inputs{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--charcoal);margin-bottom:5px}
+  .field .hint{font-size:11px;color:var(--muted);font-weight:500;margin-top:3px}
+  .field input[type=number]{width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:15px;font-weight:600;color:var(--ink);background:#fff}
+  .field input:focus{outline:none;border-color:var(--red)}
+  .field .row{display:flex;align-items:center;gap:8px}
+  .field .unit{font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap}
+  .seg{display:inline-flex;border:1.5px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg button{font-family:inherit;font-size:12.5px;font-weight:700;padding:8px 12px;background:#fff;border:none;cursor:pointer;color:var(--muted)}
+  .seg button.on{background:var(--charcoal);color:#fff}
+  .switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-weight:700;font-size:13px;color:var(--charcoal)}
+  .switch .track{width:42px;height:24px;border-radius:999px;background:var(--line);position:relative;transition:.15s}
+  .switch .track.on{background:var(--red)}
+  .switch .knob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s}
+  .switch .track.on .knob{left:21px}
+  .derived{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:14px;background:#fff}
+  .derived .d{flex:1;min-width:150px;padding:13px 16px;border-right:1px solid var(--line)}
+  .derived .d:last-child{border-right:none}
+  .derived .dl{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .derived .dv{font-size:20px;font-weight:800;margin-top:2px}
+  .badge{display:inline-block;font-size:11px;font-weight:800;color:#fff;background:var(--good);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle}
+  .readout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.readout{grid-template-columns:1fr}}
+  .col{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .col .ch{padding:13px 18px;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+  .col.seller .ch{background:var(--blush);color:var(--burgundy)}.col.renjoy .ch{background:var(--charcoal);color:#fff}
+  .col .cb{padding:8px 18px 16px}
+  .wf{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+  .wf:last-child{border-bottom:none}
+  .wf .k{color:var(--muted);font-weight:600}.wf .v{font-weight:800;font-variant-numeric:tabular-nums}
+  .wf.tot{border-top:2px solid var(--charcoal);border-bottom:none;margin-top:4px;padding-top:11px}
+  .wf.tot .k{color:var(--charcoal);font-weight:800}.wf.tot .v{font-size:21px;color:var(--burgundy)}
+  .col.renjoy .wf.tot .v{color:var(--red)}
+  .v.neg{color:var(--red)}.v.pos{color:var(--good)}.v.mut{color:var(--muted);font-weight:600}
+  .sens{display:flex;gap:8px;margin:10px 18px 4px}
+  .sens .s{flex:1;text-align:center;background:#f6efee;border-radius:9px;padding:8px 4px}
+  .sens .sl{font-size:10.5px;color:var(--muted);font-weight:700}.sens .sv{font-size:14px;font-weight:800;margin-top:2px}
+  .anchor{font-size:12.5px;font-weight:700;padding:9px 12px;border-radius:9px;margin:12px 18px 4px}
+  .anchor.hit{background:#eafaf0;color:var(--good)}.anchor.miss{background:#fdecea;color:var(--red)}
+  .compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px}
+  .ccard{border:1.5px solid var(--line);border-radius:11px;padding:12px 13px;background:#fff;cursor:pointer}
+  .ccard.on{border:2px solid var(--red)}
+  .ccard .cn{font-size:13px;font-weight:800}
+  .ccard .cr{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0;border-bottom:1px dashed var(--line)}
+  .ccard .cr:last-child{border-bottom:none}.ccard .cr .k{color:var(--muted);font-weight:600}.ccard .cr .v{font-weight:800}
+  .portfolio{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .pcard{background:var(--charcoal);color:#fff;border-radius:12px;padding:14px 16px}.pcard.accent{background:var(--red)}
+  .pcard .pl{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:#bdb6b4;font-weight:700}.pcard.accent .pl{color:#ffe3df}
+  .pcard .pv{font-size:22px;font-weight:900;margin-top:3px}
+  .pcount{display:flex;align-items:flex-end;gap:14px;margin:4px 0 14px;flex-wrap:wrap}
+  .pcount input{width:80px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-weight:600;font-size:14px}
+  .legend{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.55}.legend b{color:var(--charcoal)}
+  footer{margin-top:30px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;line-height:1.55}
+  .pill{display:inline-block;background:var(--blush);color:var(--burgundy);font-weight:700;font-size:11px;padding:2px 8px;border-radius:999px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kick">Renjoy × Stayd · Acquisition Strategy</div>
+    <h1>Tuck-In Deal Builder</h1>
+    <p class="sub">Pick a seller profile and a deal structure, then bend any lever. Models the real arbitrage: you acquire a book at the seller's weak standalone economics and operate it at Renjoy's lean margin — that EBITDA uplift, sold at the Stayd multiple, is the prize.</p>
+  </header>
+
+  <h2>1 · Seller Profile <span style="flex:0"></span></h2>
+  <p class="subhead">Sets realistic economics for the size of operator — change anything after.</p>
+  <div class="pickrow" id="tiers"></div>
+
+  <h2>2 · Deal Structure</h2>
+  <p class="subhead">Sets the deal terms — cash, roll, salary, transition assumptions.</p>
+  <div class="pickrow" id="structs"></div>
+
+  <h2>3 · Economics</h2>
+  <div class="panel">
+    <div class="grid inputs">
+      <div class="field"><label>Seller's units</label><div class="row"><input type="number" id="units" value="30"><span class="unit">units</span></div></div>
+      <div class="field"><label>Gross bookings / unit / yr</label><div class="row"><span class="unit">$</span><input type="number" id="gpu" value="40000"></div><span class="hint">Avg fare × occupancy</span></div>
+      <div class="field"><label>Effective take rate</label><div class="row"><input type="number" id="take" value="20" step="0.5"><span class="unit">%</span></div><span class="hint">Commission + fees/markups</span></div>
+      <div class="field"><label>Seller's margin today</label><div class="row"><input type="number" id="sMargin" value="20" step="1"><span class="unit">%</span></div><span class="hint">What they actually net now</span></div>
+      <div class="field"><label>Renjoy lean margin</label><div class="row"><input type="number" id="leanMargin" value="50" step="1"><span class="unit">%</span></div><span class="hint">On their stack: GX out, software killed</span></div>
+      <div class="field"><label>Standalone valuation mult.</label><div class="row"><input type="number" id="revMult" value="1.25" step="0.05"><span class="unit">× rev</span></div><span class="hint">× annual operator revenue</span></div>
+      <div class="field"><label>Renjoy units in that market</label><div class="row"><input type="number" id="rUnits" value="16"><span class="unit">units</span></div><span class="hint">0 if new market</span></div>
+      <div class="field"><label>Seller's take-home today</label><div class="row"><span class="unit">$</span><input type="number" id="curTake" value="350000"></div><span class="hint">Grounds the GM salary</span></div>
+      <div class="field"><label>Stayd exit multiple</label><div class="row"><input type="number" id="exitMult" value="13" step="0.5"><span class="unit">×</span></div></div>
+      <div class="field"><label>Years to exit</label><div class="row"><input type="number" id="years" value="2" step="0.5"><span class="unit">yrs</span></div></div>
+      <div class="field"><label>Discount rate</label><div class="row"><input type="number" id="disc" value="12" step="1"><span class="unit">%</span></div></div>
+    </div>
+    <div class="derived" id="derived"></div>
+  </div>
+
+  <h2>4 · Deal Levers</h2>
+  <div class="panel"><div id="levers"></div></div>
+
+  <h2>5 · This Deal</h2>
+  <div class="readout" id="readout"></div>
+
+  <h2>6 · Same Target, Every Structure</h2>
+  <p class="subhead">How the five structures score these economics — click to load one.</p>
+  <div class="compare" id="compare"></div>
+
+  <h2>7 · Portfolio Roll-Up</h2>
+  <p class="legend" style="margin-top:-2px">Repeat this deal across multiple tuck-ins — every door lifts Renjoy's own EBITDA, which lifts Renjoy's own roll valuation into Stayd.</p>
+  <div class="pcount"><div class="field" style="margin:0"><label style="margin-bottom:3px"># of tuck-ins like this</label><input type="number" id="pN" value="3" min="1" max="40"></div></div>
+  <div class="portfolio" id="portfolio"></div>
+
+  <footer id="footer"></footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>{const s=n<0?'-':'';n=Math.abs(Math.round(n));if(n>=1e6)return s+'$'+(n/1e6).toFixed(2)+'M';if(n>=1e3)return s+'$'+(n/1e3).toFixed(0)+'k';return s+'$'+Math.round(n).toLocaleString();};
+const x=n=>n.toFixed(1)+'×';
+const TIERS={
+  micro:{pn:'Micro · 5–20',pd:'Solo operator, no staff, cheap PMS. A book + a job.',E:{units:12,gpu:35000,take:20,sMargin:12,leanMargin:50,revMult:1.0,rUnits:0,curTake:90000}},
+  mid:{pn:'Mid · 30–80',pd:'Owner-operator + small staff, real income & brand. The Mark zone.',E:{units:30,gpu:40000,take:20,sMargin:20,leanMargin:50,revMult:1.25,rUnits:16,curTake:350000}},
+  company:{pn:'Company · 100+',pd:'Real org: ops, sales, accounting. Enterprise value, integration cost.',E:{units:130,gpu:45000,take:22,sMargin:25,leanMargin:48,revMult:1.5,rUnits:0,curTake:600000}},
+};
+const STRUCTS={
+  gmroll:{pn:'GM Roll-Up',pd:'Seller stays as paid GM; pool their book with your market; flat × on the pool.',L:{cashPct:0,salaryOn:1,salary:200000,poolMode:'market',growthUnits:0,multMode:'flat',flatMult:5,retained:50,rollPct:50,earnPerUnit:0,retentionPct:90,integPerUnit:300,anchorOn:1,anchor:1000000}},
+  rollover:{pn:'Equity Rollover',pd:'~50% cash, rest rolled into a contractual payout on their own book.',L:{cashPct:50,salaryOn:0,salary:200000,poolMode:'own',growthUnits:0,multMode:'pctExit',flatMult:5,retained:50,rollPct:50,earnPerUnit:1000,retentionPct:85,integPerUnit:300,anchorOn:0,anchor:1000000}},
+  shared:{pn:'Shared Services',pd:'No cash. Books stay put, you split the multiple.',L:{cashPct:0,salaryOn:0,salary:200000,poolMode:'own',growthUnits:0,multMode:'pctExit',flatMult:5,retained:100,rollPct:50,earnPerUnit:0,retentionPct:97,integPerUnit:50,anchorOn:0,anchor:1000000}},
+  buyout:{pn:'Clean Buyout',pd:'100% cash, owner exits, you install a GM and keep all the upside.',L:{cashPct:100,salaryOn:1,salary:200000,poolMode:'own',growthUnits:0,multMode:'flat',flatMult:0,retained:50,rollPct:50,earnPerUnit:0,retentionPct:82,integPerUnit:600,anchorOn:0,anchor:1000000}},
+  acquibook:{pn:'Acqui-Book',pd:'Buy the contracts cheap, fold into an existing market, small referral.',L:{cashPct:40,salaryOn:0,salary:200000,poolMode:'own',growthUnits:0,multMode:'flat',flatMult:0,retained:50,rollPct:50,earnPerUnit:1500,retentionPct:88,integPerUnit:150,anchorOn:0,anchor:1000000}},
+};
+let state={tier:'mid',struct:'gmroll',L:{...STRUCTS.gmroll.L}};
+function econ(){return{units:+$('units').value,gpu:+$('gpu').value,take:+$('take').value/100,sMargin:+$('sMargin').value/100,leanMargin:+$('leanMargin').value/100,revMult:+$('revMult').value,rUnits:+$('rUnits').value,curTake:+$('curTake').value,exitMult:+$('exitMult').value,years:+$('years').value,disc:+$('disc').value/100};}
+function compute(L,T,exitOverride){
+  const exit=exitOverride||T.exitMult;
+  const revPerUnit=T.gpu*T.take,revenue=T.units*revPerUnit;
+  const standaloneEbitda=revenue*T.sMargin,postPerUnit=revPerUnit*T.leanMargin,postSyn=T.units*postPerUnit;
+  const growthEb=L.growthUnits*postPerUnit,renjoyEb=T.rUnits*postPerUnit;
+  const standalone=revenue*T.revMult,ret=L.retentionPct/100;
+  const cashNow=L.cashPct/100*standalone;
+  const ebEff=postSyn*ret,growthEff=growthEb*ret,renjoyEff=renjoyEb;
+  const mult=L.multMode==='flat'?L.flatMult:(L.retained/100)*(exit*L.rollPct/100);
+  const payBaseSeller=ebEff+(L.poolMode==='market'?growthEff:0);
+  const payBaseRenjoy=(L.poolMode==='market'?renjoyEff:0);
+  const payoutSeller=payBaseSeller*mult,payoutRenjoy=payBaseRenjoy*mult;
+  const sellerPayout=payoutSeller+payoutRenjoy;
+  const earnTotal=(L.poolMode==='own')?L.growthUnits*L.earnPerUnit:0;
+  const salaryTotal=L.salaryOn?L.salary*T.years:0,integCost=L.integPerUnit*T.units;
+  const sellerTake=cashNow+sellerPayout+earnTotal;
+  const incrEb=ebEff+growthEff,incrExit=incrEb*exit;
+  const net=incrExit-sellerPayout-cashNow-salaryTotal-earnTotal-integCost;
+  const pv=v=>v/Math.pow(1+T.disc,T.years);
+  const pvSalary=L.salaryOn?L.salary*T.years/Math.pow(1+T.disc,T.years/2):0;
+  const pvNet=pv(incrExit-sellerPayout-earnTotal)-cashNow-pvSalary-integCost;
+  const effMult=postSyn>0?(cashNow+sellerPayout+earnTotal)/postSyn:0;
+  const uplift=standaloneEbitda>0?postSyn/standaloneEbitda:0;
+  return{revenue,standaloneEbitda,postSyn,postPerUnit,standalone,cashNow,sellerPayout,payoutSeller,payoutRenjoy,earnTotal,salaryTotal,integCost,sellerTake,incrEb,incrExit,net,pvNet,effMult,uplift,ebEff,growthEff};
+}
+function renderTiers(){
+  $('tiers').innerHTML=Object.entries(TIERS).map(([k,t])=>`<button class="pick ${state.tier===k?'on':''}" data-k="${k}"><div class="pn">${t.pn}</div><div class="pd">${t.pd}</div></button>`).join('');
+  $('tiers').querySelectorAll('.pick').forEach(b=>b.addEventListener('click',()=>{state.tier=b.dataset.k;const E=TIERS[b.dataset.k].E;for(const k in E)$(k).value=E[k];renderAll();}));
+}
+function renderStructs(){
+  $('structs').innerHTML=Object.entries(STRUCTS).map(([k,s])=>`<button class="pick ${state.struct===k?'on':''}" data-k="${k}"><div class="pn">${s.pn}</div><div class="pd">${s.pd}</div></button>`).join('');
+  $('structs').querySelectorAll('.pick').forEach(b=>b.addEventListener('click',()=>{state.struct=b.dataset.k;state.L={...STRUCTS[b.dataset.k].L};renderLevers();renderOutputs();renderStructs();}));
+}
+function renderLevers(){
+  const L=state.L,T=econ();
+  const seg=(id,val,opts)=>`<div class="seg" data-seg="${id}">`+opts.map(o=>`<button class="${val===o[0]?'on':''}" data-v="${o[0]}">${o[1]}</button>`).join('')+`</div>`;
+  const sw=(id,on,lab)=>`<div class="switch" data-sw="${id}"><div class="track ${on?'on':''}"><div class="knob"></div></div><span>${lab}</span></div>`;
+  let h=`<div class="grid inputs">`;
+  h+=`<div class="field"><label>Cash at close</label><div class="row"><input type="number" data-l="cashPct" value="${L.cashPct}" step="5"><span class="unit">% of valuation</span></div><span class="hint">= ${fmt(L.cashPct/100*T.units*T.gpu*T.take*T.revMult)}</span></div>`;
+  h+=`<div class="field"><label>Seller stays on as GM?</label>${sw('salaryOn',L.salaryOn,L.salaryOn?'Yes — salaried':'No')}`+(L.salaryOn?`<div class="row" style="margin-top:8px"><span class="unit">$</span><input type="number" data-l="salary" value="${L.salary}"></div><span class="hint">/yr — they net ${fmt(T.curTake)} today</span>`:`<div class="hint" style="margin-top:8px">No salary line</div>`)+`</div>`;
+  h+=`<div class="field"><label>Payout pool</label>${seg('poolMode',L.poolMode,[['own','Their book'],['market','Whole market']])}<span class="hint">${L.poolMode==='market'?'Their units + your in-market units + growth':'Only the units they bring'}</span></div>`;
+  h+=`<div class="field"><label>Units seller adds by exit</label><div class="row"><input type="number" data-l="growthUnits" value="${L.growthUnits}"><span class="unit">units</span></div></div>`;
+  h+=`<div class="field"><label>Payout multiple type</label>${seg('multMode',L.multMode,[['flat','Flat ×'],['pctExit','% of exit']])}</div>`;
+  if(L.multMode==='flat')h+=`<div class="field"><label>Flat multiple</label><div class="row"><input type="number" data-l="flatMult" value="${L.flatMult}" step="0.5"><span class="unit">×</span></div></div>`;
+  else{h+=`<div class="field"><label>Retained %</label><div class="row"><input type="number" data-l="retained" value="${L.retained}" step="5"><span class="unit">%</span></div></div>`;
+    h+=`<div class="field"><label>Roll multiple (% of exit)</label><div class="row"><input type="number" data-l="rollPct" value="${L.rollPct}" step="5"><span class="unit">%</span></div></div>`;}
+  if(L.poolMode==='own')h+=`<div class="field"><label>Per-unit earn-out</label><div class="row"><span class="unit">$</span><input type="number" data-l="earnPerUnit" value="${L.earnPerUnit}"></div></div>`;
+  h+=`<div class="field"><label>Unit retention thru hold</label><div class="row"><input type="number" data-l="retentionPct" value="${L.retentionPct}" step="1"><span class="unit">%</span></div></div>`;
+  h+=`<div class="field"><label>Integration cost / unit</label><div class="row"><span class="unit">$</span><input type="number" data-l="integPerUnit" value="${L.integPerUnit}"></div></div>`;
+  h+=`<div class="field"><label>Seller has an anchor #?</label>${sw('anchorOn',L.anchorOn,L.anchorOn?'Yes':'No')}`+(L.anchorOn?`<div class="row" style="margin-top:8px"><span class="unit">$</span><input type="number" data-l="anchor" value="${L.anchor}"></div>`:`<div class="hint" style="margin-top:8px">No target to clear</div>`)+`</div>`;
+  h+=`</div>`;
+  $('levers').innerHTML=h;
+  $('levers').querySelectorAll('input[data-l]').forEach(i=>i.addEventListener('input',e=>{state.L[e.target.dataset.l]=+e.target.value;renderOutputs();}));
+  $('levers').querySelectorAll('[data-seg]').forEach(s=>s.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{state.L[s.dataset.seg]=b.dataset.v;renderLevers();renderOutputs();})));
+  $('levers').querySelectorAll('[data-sw]').forEach(s=>s.addEventListener('click',()=>{state.L[s.dataset.sw]=state.L[s.dataset.sw]?0:1;renderLevers();renderOutputs();}));
+}
+function renderOutputs(){
+  const T=econ(),L=state.L,r=compute(L,T);
+  $('derived').innerHTML=`<div class="d"><div class="dl">Operator revenue</div><div class="dv">${fmt(r.revenue)}</div></div><div class="d"><div class="dl">EBITDA today (seller)</div><div class="dv">${fmt(r.standaloneEbitda)}</div></div><div class="d"><div class="dl">EBITDA Renjoy-run</div><div class="dv">${fmt(r.postSyn)}<span class="badge">${x(r.uplift)} uplift</span></div></div><div class="d"><div class="dl">Standalone valuation</div><div class="dv">${fmt(r.standalone)}</div></div>`;
+  let sh=`<div class="cb">`;
+  sh+=`<div class="wf"><span class="k">Cash at close</span><span class="v">${fmt(r.cashNow)}</span></div>`;
+  if(r.sellerPayout>0)sh+=`<div class="wf"><span class="k">Payout at exit</span><span class="v">${fmt(r.sellerPayout)}</span></div>`;
+  if(r.earnTotal>0)sh+=`<div class="wf"><span class="k">Per-unit earn-outs</span><span class="v">${fmt(r.earnTotal)}</span></div>`;
+  sh+=`<div class="wf tot"><span class="k">Total sale proceeds</span><span class="v">${fmt(r.sellerTake)}</span></div>`;
+  sh+=`<div class="wf"><span class="k">vs. standalone today</span><span class="v mut">${r.standalone>0?x(r.sellerTake/r.standalone):'—'}</span></div>`;
+  if(r.salaryTotal>0)sh+=`<div class="wf"><span class="k">+ GM income over hold</span><span class="v pos">${fmt(r.salaryTotal)}</span></div>`;
+  sh+=`</div>`;
+  let anc='';
+  if(L.anchorOn){const hit=r.sellerTake>=L.anchor;anc=`<div class="anchor ${hit?'hit':'miss'}">${hit?'✓ Clears anchor':'✗ Short of anchor'} (${fmt(L.anchor)}) — proceeds ${fmt(r.sellerTake)}</div>`;}
+  let rh=`<div class="cb">`;
+  rh+=`<div class="wf"><span class="k">Post-synergy EBITDA acquired</span><span class="v">${fmt(r.ebEff+r.growthEff)}</span></div>`;
+  rh+=`<div class="wf"><span class="k">× exit → value at sale</span><span class="v">${fmt(r.incrExit)}</span></div>`;
+  rh+=`<div class="wf"><span class="k">− Seller payout</span><span class="v neg">${fmt(r.payoutSeller)}</span></div>`;
+  if(r.payoutRenjoy>0)rh+=`<div class="wf"><span class="k">− × on pooled units</span><span class="v neg">${fmt(r.payoutRenjoy)}</span></div>`;
+  if(r.cashNow>0)rh+=`<div class="wf"><span class="k">− Cash at close</span><span class="v neg">${fmt(r.cashNow)}</span></div>`;
+  if(r.salaryTotal>0)rh+=`<div class="wf"><span class="k">− GM salary over hold</span><span class="v neg">${fmt(r.salaryTotal)}</span></div>`;
+  if(r.earnTotal>0)rh+=`<div class="wf"><span class="k">− Earn-outs</span><span class="v neg">${fmt(r.earnTotal)}</span></div>`;
+  if(r.integCost>0)rh+=`<div class="wf"><span class="k">− Integration cost</span><span class="v neg">${fmt(r.integCost)}</span></div>`;
+  rh+=`<div class="wf tot"><span class="k">Net to Renjoy at exit</span><span class="v">${fmt(r.net)}</span></div>`;
+  rh+=`<div class="wf"><span class="k">Present value today</span><span class="v mut">${fmt(r.pvNet)}</span></div>`;
+  rh+=`<div class="wf"><span class="k">Effective × paid</span><span class="v mut">${x(r.effMult)}</span></div></div>`;
+  const lo=compute(L,T,Math.max(1,T.exitMult-2)).net,mid=r.net,hi=compute(L,T,T.exitMult+1).net;
+  const sens=`<div class="sens"><div class="s"><div class="sl">${x(Math.max(1,T.exitMult-2))} exit</div><div class="sv">${fmt(lo)}</div></div><div class="s"><div class="sl">${x(T.exitMult)} exit</div><div class="sv">${fmt(mid)}</div></div><div class="s"><div class="sl">${x(T.exitMult+1)} exit</div><div class="sv">${fmt(hi)}</div></div></div>`;
+  $('readout').innerHTML=`<div class="col seller"><div class="ch">Seller gets</div>${sh}${anc}</div><div class="col renjoy"><div class="ch">Renjoy keeps</div>${rh}${sens}</div>`;
+  $('compare').innerHTML=Object.entries(STRUCTS).map(([k,s])=>{const c=compute(s.L,T);return`<div class="ccard ${state.struct===k?'on':''}" data-k="${k}"><div class="cn">${s.pn}</div><div class="cr"><span class="k">Net to Renjoy</span><span class="v">${fmt(c.net)}</span></div><div class="cr"><span class="k">Seller proceeds</span><span class="v">${fmt(c.sellerTake)}</span></div><div class="cr"><span class="k">Cash at close</span><span class="v">${fmt(c.cashNow)}</span></div></div>`;}).join('');
+  $('compare').querySelectorAll('.ccard').forEach(b=>b.addEventListener('click',()=>{state.struct=b.dataset.k;state.L={...STRUCTS[b.dataset.k].L};renderLevers();renderOutputs();renderStructs();}));
+  const n=+$('pN').value;
+  const items=[['Seller doors added',(T.units*n).toLocaleString()+' units',0],['Renjoy-run EBITDA added',fmt(r.postSyn*n),0],['Cash deployed',fmt(r.cashNow*n),0],['Paid to sellers',fmt(r.sellerTake*n),0],['Exit value contributed',fmt(r.incrExit*n),0],['Net to Renjoy at exit',fmt(r.net*n),1]];
+  $('portfolio').innerHTML=items.map(i=>`<div class="pcard ${i[2]?'accent':''}"><div class="pl">${i[0]}</div><div class="pv">${i[1]}</div></div>`).join('');
+  $('footer').innerHTML=`<b>The engine:</b> a seller nets ${fmt(r.standaloneEbitda)} today; on Renjoy's stack the same book throws off ${fmt(r.postSyn)} (${x(r.uplift)}). You buy near their weak number and sell at ${x(T.exitMult)} on the strong one. <span class="pill">Not legal or tax advice</span>`;
+}
+['units','gpu','take','sMargin','leanMargin','revMult','rUnits','curTake','exitMult','years','disc','pN'].forEach(id=>$(id).addEventListener('input',renderOutputs));
+function renderAll(){renderTiers();renderStructs();renderLevers();renderOutputs();}
+renderAll();
+</script>
+</body>
+</html>
