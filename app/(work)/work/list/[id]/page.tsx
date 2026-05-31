@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import {
   getList,
@@ -5,9 +6,7 @@ import {
   queryTasks,
   getCustomFields,
 } from "@/lib/work/actions";
-// NOTE: ListViewTable is owned by the other subagent.
-// We import the stub here; the other subagent will replace it with the full implementation.
-import { ListViewTable } from "@/components/work/ListViewTable";
+import { ListViewSwitcher } from "@/components/work/ListViewSwitcher";
 import { ListHeaderActions } from "@/components/work/ListHeaderActions";
 
 export default async function ListPage({
@@ -50,14 +49,16 @@ export default async function ListPage({
         </p>
       </header>
 
-      {/* Task table — ListViewTable owned by other subagent */}
-      <div className="flex-1 overflow-auto">
-        <ListViewTable
-          listId={list.id}
-          tasks={tasks}
-          statuses={statuses}
-          customFields={customFields}
-        />
+      {/* Task views — list / board / calendar */}
+      <div className="flex-1 overflow-hidden">
+        <Suspense fallback={null}>
+          <ListViewSwitcher
+            listId={list.id}
+            tasks={tasks}
+            statuses={statuses}
+            customFields={customFields}
+          />
+        </Suspense>
       </div>
     </div>
   );

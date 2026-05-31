@@ -2,7 +2,6 @@
 
 import {
   useState,
-  useEffect,
   useCallback,
   useMemo,
   useRef,
@@ -31,6 +30,8 @@ import { StatusPill } from "./StatusPill";
 import { BulkActionsBar } from "./BulkActionsBar";
 import { StatusManagerDialog } from "./StatusManagerDialog";
 import { CustomFieldsManagerDialog } from "./CustomFieldsManagerDialog";
+import { useTaskDetail } from "./TaskDetailProvider";
+import { groupTasksByStatus, buildSubtaskMap } from "@/lib/work/grouping";
 
 interface ListViewTableProps {
   listId: string;
@@ -222,42 +223,21 @@ export function ListViewTable({ listId, tasks, statuses, customFields }: ListVie
   // Dialogs
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [cfDialogOpen, setCfDialogOpen] = useState(false);
-  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
 
-  // Lazy import TaskDetailModal to avoid circular issues
-  const [TaskDetailModal, setTaskDetailModal] = useState<React.ComponentType<{
-    taskId: string | null;
-    onClose: () => void;
-    onChange: () => void;
-  }> | null>(null);
-
-  useEffect(() => {
-    import("./TaskDetailModal").then((m) => setTaskDetailModal(() => m.TaskDetailModal));
-  }, []);
+  // Task detail slide-over (shared across List/Board/Calendar)
+  const { openTask } = useTaskDetail();
 
   // Group tasks by status
   const topLevelTasks = useMemo(
     () => tasks.filter((t) => !t.parent_id),
     [tasks]
   );
-  const subtaskMap = useMemo(() => {
-    const m: Record<string, Task[]> = {};
-    for (const t of tasks) {
-      if (t.parent_id) {
-        if (!m[t.parent_id]) m[t.parent_id] = [];
-        m[t.parent_id].push(t);
-      }
-    }
-    return m;
-  }, [tasks]);
+  const subtaskMap = useMemo(() => buildSubtaskMap(tasks), [tasks]);
 
-  const groupedByStatus = useMemo(() => {
-    const sorted = [...statuses].sort((a, b) => a.order - b.order);
-    return sorted.map((s) => ({
-      status: s,
-      tasks: topLevelTasks.filter((t) => t.status_id === s.id),
-    }));
-  }, [statuses, topLevelTasks]);
+  const groupedByStatus = useMemo(
+    () => groupTasksByStatus(tasks, statuses),
+    [tasks, statuses]
+  );
 
   // Flat ordered list for keyboard navigation
   const flatTaskIds = useMemo(() => {
@@ -538,7 +518,7 @@ export function ListViewTable({ listId, tasks, statuses, customFields }: ListVie
                               selectedIds={selectedIds}
                               activeTaskId={activeTaskId}
                               onSelect={handleSelect}
-                              onOpen={setOpenTaskId}
+                              onOpen={openTask}
                               onChange={onChange}
                               onToggleExpand={() =>
                                 setExpandedSubtasks((prev) => ({
@@ -588,15 +568,6 @@ export function ListViewTable({ listId, tasks, statuses, customFields }: ListVie
         onClose={() => setCfDialogOpen(false)}
         onChange={onChange}
       />
-
-      {/* Task detail modal */}
-      {TaskDetailModal && (
-        <TaskDetailModal
-          taskId={openTaskId}
-          onClose={() => setOpenTaskId(null)}
-          onChange={onChange}
-        />
-      )}
     </div>
   );
 }

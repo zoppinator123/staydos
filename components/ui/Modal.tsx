@@ -36,15 +36,15 @@ export function Modal({ open, onClose, title, children, footer, size = "md" }: P
       onClick={onClose}
     >
       <div
-        className={`w-full ${sizeClasses[size]} overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800`}
+        className={`w-full ${sizeClasses[size]} overflow-hidden rounded-xl bg-surface shadow-2xl ring-1 ring-border`}
         onClick={(e) => e.stopPropagation()}
       >
         {title ? (
-          <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-3.5 text-sm font-semibold text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3.5 text-sm font-semibold text-foreground">
             <div>{title}</div>
             <button
               onClick={onClose}
-              className="rounded-md p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+              className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label="Close"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -60,7 +60,7 @@ export function Modal({ open, onClose, title, children, footer, size = "md" }: P
         ) : null}
         <div className="px-5 py-4">{children}</div>
         {footer ? (
-          <div className="flex items-center justify-end gap-2 border-t border-zinc-200 bg-zinc-50 px-5 py-3 dark:border-zinc-800 dark:bg-zinc-900/60">
+          <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-alt px-5 py-3">
             {footer}
           </div>
         ) : null}

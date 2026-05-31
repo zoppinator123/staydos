@@ -4,6 +4,8 @@ import { getSpaces, getFolders, getLists } from "@/lib/work/actions";
 import { TopBar } from "@/components/shell/TopBar";
 import { AppSidebar } from "@/components/shell/AppSidebar";
 import { WorkNav } from "@/components/shell/WorkNav";
+import { MobileNav } from "@/components/shell/MobileNav";
+import { MobileNavProvider } from "@/components/shell/MobileNavContext";
 import { CmdK } from "@/components/shell/CmdK";
 
 export default async function WorkLayout({
@@ -27,26 +29,31 @@ export default async function WorkLayout({
   const allLists = listsPerSpace.flat();
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
-      {/* Top bar */}
-      <TopBar userEmail={user.email} userName={user.name} />
+    <MobileNavProvider>
+      <div className="flex h-screen flex-col overflow-hidden bg-background">
+        {/* Top bar */}
+        <TopBar userEmail={user.email} userName={user.name} />
 
-      {/* Body: sidebar + work nav + main */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* App sidebar — sectioned nav */}
-        <AppSidebar />
+        {/* Body: sidebar + work nav + main */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* App sidebar — sectioned nav */}
+          <AppSidebar />
 
-        {/* Work nav — space/folder/list tree */}
-        <WorkNav spaces={spaces} folders={allFolders} lists={allLists} />
+          {/* Work nav — space/folder/list tree */}
+          <WorkNav spaces={spaces} folders={allFolders} lists={allLists} />
 
-        {/* Main content */}
-        <main className="flex-1 overflow-auto bg-background">
-          {children}
-        </main>
+          {/* Main content */}
+          <main className="flex-1 overflow-auto bg-background">
+            {children}
+          </main>
+        </div>
+
+        {/* Mobile navigation drawer */}
+        <MobileNav spaces={spaces} folders={allFolders} lists={allLists} />
+
+        {/* Cmd+K palette */}
+        <CmdK />
       </div>
-
-      {/* Cmd+K palette */}
-      <CmdK />
-    </div>
+    </MobileNavProvider>
   );
 }

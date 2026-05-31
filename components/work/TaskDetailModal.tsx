@@ -64,7 +64,7 @@ import type {
   RecurrenceRule,
   RecurrenceFrequency,
 } from "@/lib/work/types";
-import { Modal } from "@/components/ui/Modal";
+import { Drawer } from "@/components/ui/Drawer";
 import { MentionInput } from "./MentionInput";
 import { StatusPill } from "./StatusPill";
 
@@ -380,13 +380,23 @@ export function TaskDetailModal({ taskId, onClose, onChange }: TaskDetailModalPr
   if (!taskId) return null;
 
   return (
-    <Modal open={!!taskId} onClose={onClose} size="xl">
+    <Drawer
+      open={!!taskId}
+      onClose={onClose}
+      side="right"
+      resizable
+      storageKey="staydos:taskDetailWidth"
+      defaultWidth={640}
+      minWidth={420}
+      maxWidth={960}
+      ariaLabel="Task detail"
+    >
       {loading && !task ? (
-        <div className="flex h-64 items-center justify-center text-muted-foreground text-sm">
+        <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
           Loading…
         </div>
       ) : task ? (
-        <div className="flex h-full max-h-[80vh] overflow-hidden -mx-5 -my-4">
+        <div className="flex h-full overflow-hidden">
           {/* Main column */}
           <div className="flex flex-1 flex-col overflow-hidden">
             {/* Header */}
@@ -819,7 +829,7 @@ export function TaskDetailModal({ taskId, onClose, onChange }: TaskDetailModalPr
           </div>
         </div>
       ) : null}
-    </Modal>
+    </Drawer>
   );
 }
 

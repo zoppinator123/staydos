@@ -29,6 +29,18 @@
   --color-mid: 102 102 102;               /* #666666 */
   --color-muted-soft: 153 153 153;        /* #999999 */
 
+  /* Chrome — always-dark nav surfaces (TopBar/AppSidebar/WorkNav).
+     Defined at :root only (no html.dark override) so the chrome stays
+     visually constant across light and dark themes. */
+  --color-chrome: 14 16 15;                /* TopBar bg */
+  --color-chrome-alt: 18 20 19;            /* AppSidebar bg */
+  --color-chrome-alt2: 21 24 22;           /* WorkNav bg */
+  --color-chrome-popover: 24 24 27;        /* zinc-900 popovers */
+  --color-chrome-foreground: 228 228 231;  /* zinc-200 primary label */
+  --color-chrome-foreground-soft: 212 212 216; /* zinc-300 */
+  --color-chrome-muted: 161 161 170;       /* zinc-400 */
+  --color-chrome-faint: 113 113 122;       /* zinc-500 */
+
   --radius-card: 14px;
   --radius-pill: 30px;
 
@@ -87,6 +99,14 @@ html.dark { color-scheme: dark; }
   --color-success: rgb(var(--color-success));
   --color-warning: rgb(var(--color-warning));
   --color-danger: rgb(var(--color-danger));
+  --color-chrome: rgb(var(--color-chrome));
+  --color-chrome-alt: rgb(var(--color-chrome-alt));
+  --color-chrome-alt2: rgb(var(--color-chrome-alt2));
+  --color-chrome-popover: rgb(var(--color-chrome-popover));
+  --color-chrome-foreground: rgb(var(--color-chrome-foreground));
+  --color-chrome-foreground-soft: rgb(var(--color-chrome-foreground-soft));
+  --color-chrome-muted: rgb(var(--color-chrome-muted));
+  --color-chrome-faint: rgb(var(--color-chrome-faint));
 
   --radius-card: var(--radius-card);
   --radius-pill: var(--radius-pill);
@@ -165,11 +185,22 @@ input, textarea, select {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.45; }
 }
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
 .animate-fade-in { animation: fade-in var(--motion-fade) both; }
 .animate-slide-up { animation: slide-up var(--motion-slide) both; }
 .animate-pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+.animate-slide-in-right { animation: slide-in-right var(--motion-slide) both; }
+.animate-slide-in-left { animation: slide-in-left var(--motion-slide) both; }
 
 /* Reduce motion */
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-in, .animate-slide-up, .animate-pulse-dot { animation: none; }
+  .animate-fade-in, .animate-slide-up, .animate-pulse-dot,
+  .animate-slide-in-right, .animate-slide-in-left { animation: none; }
 }

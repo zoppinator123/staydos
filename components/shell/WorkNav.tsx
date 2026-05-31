@@ -75,7 +75,7 @@ function InlineRename({
         if (e.key === "Escape") onCancel();
       }}
       onBlur={() => { if (val.trim() && val.trim() !== defaultValue) onSave(val.trim()); else onCancel(); }}
-      className="flex-1 rounded bg-white/5 border border-white/10 px-1.5 py-0.5 text-xs text-zinc-300 outline-none focus:border-white/20 min-w-0"
+      className="flex-1 rounded bg-white/5 border border-white/10 px-1.5 py-0.5 text-xs text-chrome-foreground-soft outline-none focus:border-white/20 min-w-0"
     />
   );
 }
@@ -92,7 +92,7 @@ function ConfirmInline({
 }) {
   return (
     <div className="px-2 py-1 flex flex-col gap-1">
-      <p className="text-[10px] text-zinc-400">{label}</p>
+      <p className="text-[10px] text-chrome-muted">{label}</p>
       <div className="flex gap-1">
         <button
           className="flex-1 rounded bg-red-700 px-1.5 py-0.5 text-[10px] text-white hover:bg-red-600"
@@ -101,7 +101,7 @@ function ConfirmInline({
           Delete
         </button>
         <button
-          className="flex-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-zinc-300 hover:bg-white/15"
+          className="flex-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-chrome-foreground-soft hover:bg-white/15"
           onClick={onCancel}
         >
           Cancel
@@ -161,7 +161,7 @@ function SpaceSettingsMenu({
   if (mode === "rename") {
     return (
       <div className="px-2 py-2">
-        <p className="text-[10px] text-zinc-500 mb-1">Rename space</p>
+        <p className="text-[10px] text-chrome-faint mb-1">Rename space</p>
         <InlineRename
           defaultValue={space.name}
           onSave={handleRename}
@@ -174,7 +174,7 @@ function SpaceSettingsMenu({
   if (mode === "color") {
     return (
       <div className="px-2 py-2 flex flex-col gap-2">
-        <p className="text-[10px] text-zinc-500">Space color</p>
+        <p className="text-[10px] text-chrome-faint">Space color</p>
         <input
           type="color"
           value={colorVal}
@@ -189,7 +189,7 @@ function SpaceSettingsMenu({
             Save
           </button>
           <button
-            className="flex-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-zinc-300 hover:bg-white/15"
+            className="flex-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-chrome-foreground-soft hover:bg-white/15"
             onClick={onClose}
           >
             Cancel
@@ -212,14 +212,14 @@ function SpaceSettingsMenu({
   return (
     <div className="py-1">
       <button
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-chrome-foreground-soft hover:bg-white/10 transition-colors"
         onClick={() => setMode("rename")}
       >
         <Edit3 size={11} />
         Rename
       </button>
       <button
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-chrome-foreground-soft hover:bg-white/10 transition-colors"
         onClick={() => setMode("color")}
       >
         <span className="h-3 w-3 rounded-full shrink-0" style={{ background: space.color ?? "#6366f1" }} />
@@ -227,7 +227,7 @@ function SpaceSettingsMenu({
       </button>
       <div className="my-1 border-t border-white/10" />
       <button
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-chrome-foreground-soft hover:bg-white/10 transition-colors"
         onClick={handleArchive}
       >
         <Archive size={11} />
@@ -276,7 +276,7 @@ function ListRowMenu({
   if (mode === "rename") {
     return (
       <div className="px-2 py-2">
-        <p className="text-[10px] text-zinc-500 mb-1">Rename list</p>
+        <p className="text-[10px] text-chrome-faint mb-1">Rename list</p>
         <InlineRename defaultValue={list.name} onSave={handleRename} onCancel={onClose} />
       </div>
     );
@@ -295,7 +295,7 @@ function ListRowMenu({
   return (
     <div className="py-1">
       <button
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-chrome-foreground-soft hover:bg-white/10 transition-colors"
         onClick={() => setMode("rename")}
       >
         <Edit3 size={11} />
@@ -303,7 +303,7 @@ function ListRowMenu({
       </button>
       <div className="my-1 border-t border-white/10" />
       <button
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-chrome-foreground-soft hover:bg-white/10 transition-colors"
         onClick={handleArchive}
       >
         <Archive size={11} />
@@ -352,7 +352,7 @@ function FolderRowMenu({
   if (mode === "rename") {
     return (
       <div className="px-2 py-2">
-        <p className="text-[10px] text-zinc-500 mb-1">Rename folder</p>
+        <p className="text-[10px] text-chrome-faint mb-1">Rename folder</p>
         <InlineRename defaultValue={folder.name} onSave={handleRename} onCancel={onClose} />
       </div>
     );
@@ -371,7 +371,7 @@ function FolderRowMenu({
   return (
     <div className="py-1">
       <button
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-chrome-foreground-soft hover:bg-white/10 transition-colors"
         onClick={() => setMode("rename")}
       >
         <Edit3 size={11} />
@@ -379,7 +379,7 @@ function FolderRowMenu({
       </button>
       <div className="my-1 border-t border-white/10" />
       <button
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-chrome-foreground-soft hover:bg-white/10 transition-colors"
         onClick={handleArchive}
       >
         <Archive size={11} />
@@ -441,7 +441,7 @@ function Popover({
     <div
       ref={ref}
       style={{ position: "fixed", top: pos.top, left: pos.left }}
-      className="z-[100] min-w-[180px] rounded-md border border-white/10 bg-zinc-900 shadow-xl"
+      className="z-[100] min-w-[180px] rounded-md border border-white/10 bg-chrome-popover shadow-xl"
       onClick={(e) => e.stopPropagation()}
     >
       {children}
@@ -461,7 +461,7 @@ function ListRow({ list, active }: { list: List; active: boolean }) {
         className={`flex flex-1 items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors ${
           active
             ? "bg-white/10 text-white"
-            : "text-zinc-400 hover:text-white hover:bg-white/5"
+            : "text-chrome-muted hover:text-white hover:bg-white/5"
         }`}
       >
         {getListIcon(list.type)}
@@ -470,7 +470,7 @@ function ListRow({ list, active }: { list: List; active: boolean }) {
       {/* ... button on hover */}
       <button
         ref={btnRef}
-        className="mr-1 hidden group-hover:flex h-5 w-5 items-center justify-center rounded text-zinc-500 hover:text-zinc-300 hover:bg-white/10 transition-colors"
+        className="mr-1 hidden group-hover:flex h-5 w-5 items-center justify-center rounded text-chrome-faint hover:text-chrome-foreground-soft hover:bg-white/10 transition-colors"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu((v) => !v); }}
       >
         <MoreHorizontal size={11} />
@@ -506,17 +506,17 @@ function FolderNode({
           className="flex flex-1 items-center gap-1.5 px-2 py-1.5 text-left rounded-md hover:bg-white/5 transition-colors"
         >
           {expanded ? (
-            <ChevronDown size={12} className="text-zinc-500 shrink-0" />
+            <ChevronDown size={12} className="text-chrome-faint shrink-0" />
           ) : (
-            <ChevronRight size={12} className="text-zinc-500 shrink-0" />
+            <ChevronRight size={12} className="text-chrome-faint shrink-0" />
           )}
-          <Folder size={13} className="text-zinc-500 shrink-0" />
-          <span className="truncate text-xs text-zinc-400">{folder.name}</span>
+          <Folder size={13} className="text-chrome-faint shrink-0" />
+          <span className="truncate text-xs text-chrome-muted">{folder.name}</span>
         </button>
         {/* ... button on hover */}
         <button
           ref={folderBtnRef}
-          className="mr-1 hidden group-hover:flex h-5 w-5 items-center justify-center rounded text-zinc-500 hover:text-zinc-300 hover:bg-white/10 transition-colors"
+          className="mr-1 hidden group-hover:flex h-5 w-5 items-center justify-center rounded text-chrome-faint hover:text-chrome-foreground-soft hover:bg-white/10 transition-colors"
           onClick={(e) => { e.stopPropagation(); setShowMenu((v) => !v); }}
         >
           <MoreHorizontal size={11} />
@@ -580,18 +580,18 @@ function SpaceNode({ space, folders, lists, activeListId }: SpaceNodeProps) {
             style={{ background: space.color ?? "#6366f1" }}
           />
           {expanded ? (
-            <ChevronDown size={12} className="text-zinc-500 shrink-0" />
+            <ChevronDown size={12} className="text-chrome-faint shrink-0" />
           ) : (
-            <ChevronRight size={12} className="text-zinc-500 shrink-0" />
+            <ChevronRight size={12} className="text-chrome-faint shrink-0" />
           )}
-          <span className="truncate text-sm text-zinc-300 font-medium">{space.name}</span>
+          <span className="truncate text-sm text-chrome-foreground-soft font-medium">{space.name}</span>
         </button>
         <div className="hidden group-hover:flex items-center gap-0.5">
           {/* Space settings popover */}
           <button
             ref={spaceBtnRef}
             aria-label="Space settings"
-            className="flex h-5 w-5 items-center justify-center rounded text-zinc-500 hover:text-zinc-300"
+            className="flex h-5 w-5 items-center justify-center rounded text-chrome-faint hover:text-chrome-foreground-soft"
             onClick={(e) => { e.stopPropagation(); setShowSpaceMenu((v) => !v); }}
           >
             <Settings size={11} />
@@ -604,7 +604,7 @@ function SpaceNode({ space, folders, lists, activeListId }: SpaceNodeProps) {
           <button
             onClick={() => setAddingList(true)}
             aria-label="Add list"
-            className="flex h-5 w-5 items-center justify-center rounded text-zinc-500 hover:text-zinc-300"
+            className="flex h-5 w-5 items-center justify-center rounded text-chrome-faint hover:text-chrome-foreground-soft"
           >
             <Plus size={11} />
           </button>
@@ -648,7 +648,7 @@ function SpaceNode({ space, folders, lists, activeListId }: SpaceNodeProps) {
                   }
                 }}
                 placeholder="List name…"
-                className="flex-1 rounded bg-white/5 border border-white/10 px-2 py-1 text-xs text-zinc-300 outline-none focus:border-white/20"
+                className="flex-1 rounded bg-white/5 border border-white/10 px-2 py-1 text-xs text-chrome-foreground-soft outline-none focus:border-white/20"
                 disabled={isPending}
               />
               <button
@@ -668,33 +668,15 @@ function SpaceNode({ space, folders, lists, activeListId }: SpaceNodeProps) {
 
 const WORKNAV_STORAGE_KEY = "staydos:workNavCollapsed";
 
-export function WorkNav({ spaces, folders, lists }: WorkNavProps) {
+/**
+ * The space/folder/list tree body. Shared by the desktop WorkNav rail and the
+ * mobile nav drawer so the navigation tree lives in exactly one place.
+ */
+export function WorkNavTree({ spaces, folders, lists }: WorkNavProps) {
   const pathname = usePathname();
   const [addingSpace, setAddingSpace] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState("");
   const [isPending, startTransition] = useTransition();
-  const [collapsed, setCollapsed] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
-
-  // Load persisted collapse state after hydration
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(WORKNAV_STORAGE_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (stored === "1") setCollapsed(true);
-    } catch {}
-    setHydrated(true);
-  }, []);
-
-  function toggleCollapsed() {
-    setCollapsed((v) => {
-      const next = !v;
-      try {
-        window.localStorage.setItem(WORKNAV_STORAGE_KEY, next ? "1" : "0");
-      } catch {}
-      return next;
-    });
-  }
 
   // Determine active list id from path
   const listMatch = pathname.match(/\/work\/list\/([^/]+)/);
@@ -709,54 +691,15 @@ export function WorkNav({ spaces, folders, lists }: WorkNavProps) {
     });
   }
 
-  // When collapsed (after hydration), render a slim rail with just a toggle button
-  if (hydrated && collapsed) {
-    return (
-      <nav
-        className="hidden md:flex flex-col w-[40px] shrink-0 items-center py-3 transition-[width] duration-150"
-        style={{ background: "rgb(21 24 22)" }}
-        aria-label="Work navigation (collapsed)"
-      >
-        <button
-          onClick={toggleCollapsed}
-          aria-label="Expand work navigation"
-          title="Expand"
-          className="flex h-7 w-7 items-center justify-center rounded text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-colors"
-        >
-          <PanelLeftOpen size={15} />
-        </button>
-      </nav>
-    );
-  }
-
   return (
-    <nav
-      className="hidden md:flex flex-col w-[220px] shrink-0 overflow-y-auto py-3 transition-[width] duration-150"
-      style={{ background: "rgb(21 24 22)" }}
-      aria-label="Work navigation"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pb-1 pt-1">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 select-none">
-          WORK
-        </p>
-        <button
-          onClick={toggleCollapsed}
-          aria-label="Collapse work navigation"
-          title="Collapse"
-          className="flex h-6 w-6 items-center justify-center rounded text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-colors"
-        >
-          <PanelLeftClose size={13} />
-        </button>
-      </div>
-
+    <>
       {/* All Tasks link */}
       <Link
         href="/work/tasks"
         className={`flex items-center gap-2 px-4 py-1.5 text-sm mx-1 rounded-md transition-colors ${
           pathname === "/work/tasks"
             ? "bg-white/10 text-white font-medium"
-            : "text-zinc-400 hover:text-white hover:bg-white/5"
+            : "text-chrome-muted hover:text-white hover:bg-white/5"
         }`}
       >
         <LayoutList size={14} className="shrink-0" />
@@ -793,7 +736,7 @@ export function WorkNav({ spaces, folders, lists }: WorkNavProps) {
                 }
               }}
               placeholder="Space name…"
-              className="flex-1 rounded bg-white/5 border border-white/10 px-2 py-1 text-xs text-zinc-300 outline-none focus:border-white/20"
+              className="flex-1 rounded bg-white/5 border border-white/10 px-2 py-1 text-xs text-chrome-foreground-soft outline-none focus:border-white/20"
               disabled={isPending}
             />
             <button
@@ -807,29 +750,81 @@ export function WorkNav({ spaces, folders, lists }: WorkNavProps) {
         ) : (
           <button
             onClick={() => setAddingSpace(true)}
-            className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors w-full"
+            className="flex items-center gap-1.5 text-xs text-chrome-faint hover:text-chrome-foreground-soft transition-colors w-full"
           >
             <Plus size={13} />
             New Space
           </button>
         )}
       </div>
+    </>
+  );
+}
 
-      {/* Mobile: details/summary fallback */}
-      <details className="md:hidden px-3 pt-2">
-        <summary className="cursor-pointer text-xs text-zinc-400">Work navigation</summary>
-        <div className="pt-2">
-          {spaces.map((space) => (
-            <SpaceNode
-              key={space.id}
-              space={space}
-              folders={folders.filter((f) => f.space_id === space.id)}
-              lists={lists}
-              activeListId={activeListId}
-            />
-          ))}
-        </div>
-      </details>
+export function WorkNav({ spaces, folders, lists }: WorkNavProps) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Load persisted collapse state after hydration
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(WORKNAV_STORAGE_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (stored === "1") setCollapsed(true);
+    } catch {}
+    setHydrated(true);
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((v) => {
+      const next = !v;
+      try {
+        window.localStorage.setItem(WORKNAV_STORAGE_KEY, next ? "1" : "0");
+      } catch {}
+      return next;
+    });
+  }
+
+  // When collapsed (after hydration), render a slim rail with just a toggle button
+  if (hydrated && collapsed) {
+    return (
+      <nav
+        className="hidden md:flex flex-col w-[40px] shrink-0 items-center py-3 transition-[width] duration-150 bg-chrome-alt2"
+        aria-label="Work navigation (collapsed)"
+      >
+        <button
+          onClick={toggleCollapsed}
+          aria-label="Expand work navigation"
+          title="Expand"
+          className="flex h-7 w-7 items-center justify-center rounded text-chrome-faint hover:text-chrome-foreground hover:bg-white/5 transition-colors"
+        >
+          <PanelLeftOpen size={15} />
+        </button>
+      </nav>
+    );
+  }
+
+  return (
+    <nav
+      className="hidden md:flex flex-col w-[220px] shrink-0 overflow-y-auto py-3 transition-[width] duration-150 bg-chrome-alt2"
+      aria-label="Work navigation"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pb-1 pt-1">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-chrome-faint select-none">
+          WORK
+        </p>
+        <button
+          onClick={toggleCollapsed}
+          aria-label="Collapse work navigation"
+          title="Collapse"
+          className="flex h-6 w-6 items-center justify-center rounded text-chrome-faint hover:text-chrome-foreground hover:bg-white/5 transition-colors"
+        >
+          <PanelLeftClose size={13} />
+        </button>
+      </div>
+
+      <WorkNavTree spaces={spaces} folders={folders} lists={lists} />
     </nav>
   );
 }
