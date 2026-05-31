@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Renjoy Tuck-In Deal Builder</title>
+<title>Brand Tuck-In Deal Builder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -51,14 +51,14 @@
   @media(max-width:720px){.readout{grid-template-columns:1fr}}
   .col{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .col .ch{padding:13px 18px;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
-  .col.seller .ch{background:var(--blush);color:var(--burgundy)}.col.renjoy .ch{background:var(--charcoal);color:#fff}
+  .col.seller .ch{background:var(--blush);color:var(--burgundy)}.col.brand .ch{background:var(--charcoal);color:#fff}
   .col .cb{padding:8px 18px 16px}
   .wf{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
   .wf:last-child{border-bottom:none}
   .wf .k{color:var(--muted);font-weight:600}.wf .v{font-weight:800;font-variant-numeric:tabular-nums}
   .wf.tot{border-top:2px solid var(--charcoal);border-bottom:none;margin-top:4px;padding-top:11px}
   .wf.tot .k{color:var(--charcoal);font-weight:800}.wf.tot .v{font-size:21px;color:var(--burgundy)}
-  .col.renjoy .wf.tot .v{color:var(--red)}
+  .col.brand .wf.tot .v{color:var(--red)}
   .v.neg{color:var(--red)}.v.pos{color:var(--good)}.v.mut{color:var(--muted);font-weight:600}
   .sens{display:flex;gap:8px;margin:10px 18px 4px}
   .sens .s{flex:1;text-align:center;background:#f6efee;border-radius:9px;padding:8px 4px}
@@ -85,9 +85,9 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="kick">Renjoy × Stayd · Acquisition Strategy</div>
+    <div class="kick">Brand × Stayd · Acquisition Strategy</div>
     <h1>Tuck-In Deal Builder</h1>
-    <p class="sub">Pick a seller profile and a deal structure, then bend any lever. Models the real arbitrage: you acquire a book at the seller's weak standalone economics and operate it at Renjoy's lean margin — that EBITDA uplift, sold at the Stayd multiple, is the prize.</p>
+    <p class="sub">Pick a seller profile and a deal structure, then bend any lever. Models the real arbitrage: you acquire a book at the seller's weak standalone economics and operate it at Brand's lean margin — that EBITDA uplift, sold at the Stayd multiple, is the prize.</p>
   </header>
 
   <h2>1 · Seller Profile <span style="flex:0"></span></h2>
@@ -105,9 +105,12 @@
       <div class="field"><label>Gross bookings / unit / yr</label><div class="row"><span class="unit">$</span><input type="number" id="gpu" value="40000"></div><span class="hint">Avg fare × occupancy</span></div>
       <div class="field"><label>Effective take rate</label><div class="row"><input type="number" id="take" value="20" step="0.5"><span class="unit">%</span></div><span class="hint">Commission + fees/markups</span></div>
       <div class="field"><label>Seller's margin today</label><div class="row"><input type="number" id="sMargin" value="20" step="1"><span class="unit">%</span></div><span class="hint">What they actually net now</span></div>
-      <div class="field"><label>Renjoy lean margin</label><div class="row"><input type="number" id="leanMargin" value="50" step="1"><span class="unit">%</span></div><span class="hint">On their stack: GX out, software killed</span></div>
-      <div class="field"><label>Standalone valuation mult.</label><div class="row"><input type="number" id="revMult" value="1.25" step="0.05"><span class="unit">× rev</span></div><span class="hint">× annual operator revenue</span></div>
-      <div class="field"><label>Renjoy units in that market</label><div class="row"><input type="number" id="rUnits" value="16"><span class="unit">units</span></div><span class="hint">0 if new market</span></div>
+      <div class="field"><label>Brand lean margin</label><div class="row"><input type="number" id="leanMargin" value="50" step="1"><span class="unit">%</span></div><span class="hint">On their stack: GX out, software killed</span></div>
+      <div class="field"><label>Valuation basis</label><div class="seg" data-eseg="valBasis"><button class="on" data-v="rev">Revenue ×</button><button data-v="ebitda">EBITDA ×</button></div><span class="hint">How the entry valuation is priced</span></div>
+      <div class="field"><label>Revenue multiple</label><div class="row"><input type="number" id="revMult" value="1.25" step="0.05"><span class="unit">× rev</span></div><span class="hint">Applies when Valuation basis is Revenue ×</span></div>
+      <div class="field"><label>Entry EBITDA</label><div class="row"><span class="unit">$</span><input type="number" id="entryEbitda" value=""></div><span class="hint">Leave blank to use calculated seller EBITDA</span></div>
+      <div class="field"><label>EBITDA multiple</label><div class="row"><input type="number" id="ebitdaMult" value="5" step="0.25"><span class="unit">× EBITDA</span></div><span class="hint">Applies when Valuation basis is EBITDA ×</span></div>
+      <div class="field"><label>Brand units in that market</label><div class="row"><input type="number" id="rUnits" value="16"><span class="unit">units</span></div><span class="hint">0 if new market</span></div>
       <div class="field"><label>Seller's take-home today</label><div class="row"><span class="unit">$</span><input type="number" id="curTake" value="350000"></div><span class="hint">Grounds the GM salary</span></div>
       <div class="field"><label>Stayd exit multiple</label><div class="row"><input type="number" id="exitMult" value="13" step="0.5"><span class="unit">×</span></div></div>
       <div class="field"><label>Years to exit</label><div class="row"><input type="number" id="years" value="2" step="0.5"><span class="unit">yrs</span></div></div>
@@ -127,7 +130,7 @@
   <div class="compare" id="compare"></div>
 
   <h2>7 · Portfolio Roll-Up</h2>
-  <p class="legend" style="margin-top:-2px">Repeat this deal across multiple tuck-ins — every door lifts Renjoy's own EBITDA, which lifts Renjoy's own roll valuation into Stayd.</p>
+  <p class="legend" style="margin-top:-2px">Repeat this deal across multiple tuck-ins — every door lifts Brand's own EBITDA, which lifts Brand's own roll valuation into Stayd.</p>
   <div class="pcount"><div class="field" style="margin:0"><label style="margin-bottom:3px"># of tuck-ins like this</label><input type="number" id="pN" value="3" min="1" max="40"></div></div>
   <div class="portfolio" id="portfolio"></div>
 
@@ -150,21 +153,25 @@ const STRUCTS={
   buyout:{pn:'Clean Buyout',pd:'100% cash, owner exits, you install a GM and keep all the upside.',L:{cashPct:100,salaryOn:1,salary:200000,poolMode:'own',growthUnits:0,multMode:'flat',flatMult:0,retained:50,rollPct:50,earnPerUnit:0,retentionPct:82,integPerUnit:600,anchorOn:0,anchor:1000000}},
   acquibook:{pn:'Acqui-Book',pd:'Buy the contracts cheap, fold into an existing market, small referral.',L:{cashPct:40,salaryOn:0,salary:200000,poolMode:'own',growthUnits:0,multMode:'flat',flatMult:0,retained:50,rollPct:50,earnPerUnit:1500,retentionPct:88,integPerUnit:150,anchorOn:0,anchor:1000000}},
 };
-let state={tier:'mid',struct:'gmroll',L:{...STRUCTS.gmroll.L}};
-function econ(){return{units:+$('units').value,gpu:+$('gpu').value,take:+$('take').value/100,sMargin:+$('sMargin').value/100,leanMargin:+$('leanMargin').value/100,revMult:+$('revMult').value,rUnits:+$('rUnits').value,curTake:+$('curTake').value,exitMult:+$('exitMult').value,years:+$('years').value,disc:+$('disc').value/100};}
+let state={tier:'mid',struct:'gmroll',valBasis:'rev',L:{...STRUCTS.gmroll.L}};
+function econ(){return{units:+$('units').value,gpu:+$('gpu').value,take:+$('take').value/100,sMargin:+$('sMargin').value/100,leanMargin:+$('leanMargin').value/100,revMult:+$('revMult').value,rUnits:+$('rUnits').value,curTake:+$('curTake').value,exitMult:+$('exitMult').value,years:+$('years').value,disc:+$('disc').value/100,entryEbitda:$('entryEbitda').value!==''?+$('entryEbitda').value:null,ebitdaMult:+$('ebitdaMult').value,valBasis:state.valBasis};}
+function standaloneValuation(T,standaloneEbitda,revenue){
+  const entryEbitda=T.entryEbitda!==null?T.entryEbitda:standaloneEbitda;
+  return T.valBasis==='ebitda'?entryEbitda*T.ebitdaMult:revenue*T.revMult;
+}
 function compute(L,T,exitOverride){
   const exit=exitOverride||T.exitMult;
   const revPerUnit=T.gpu*T.take,revenue=T.units*revPerUnit;
   const standaloneEbitda=revenue*T.sMargin,postPerUnit=revPerUnit*T.leanMargin,postSyn=T.units*postPerUnit;
-  const growthEb=L.growthUnits*postPerUnit,renjoyEb=T.rUnits*postPerUnit;
-  const standalone=revenue*T.revMult,ret=L.retentionPct/100;
+  const growthEb=L.growthUnits*postPerUnit,brandEb=T.rUnits*postPerUnit;
+  const standalone=standaloneValuation(T,standaloneEbitda,revenue),ret=L.retentionPct/100;
   const cashNow=L.cashPct/100*standalone;
-  const ebEff=postSyn*ret,growthEff=growthEb*ret,renjoyEff=renjoyEb;
+  const ebEff=postSyn*ret,growthEff=growthEb*ret,brandEff=brandEb;
   const mult=L.multMode==='flat'?L.flatMult:(L.retained/100)*(exit*L.rollPct/100);
   const payBaseSeller=ebEff+(L.poolMode==='market'?growthEff:0);
-  const payBaseRenjoy=(L.poolMode==='market'?renjoyEff:0);
-  const payoutSeller=payBaseSeller*mult,payoutRenjoy=payBaseRenjoy*mult;
-  const sellerPayout=payoutSeller+payoutRenjoy;
+  const payBaseBrand=(L.poolMode==='market'?brandEff:0);
+  const payoutSeller=payBaseSeller*mult,payoutBrand=payBaseBrand*mult;
+  const sellerPayout=payoutSeller+payoutBrand;
   const earnTotal=(L.poolMode==='own')?L.growthUnits*L.earnPerUnit:0;
   const salaryTotal=L.salaryOn?L.salary*T.years:0,integCost=L.integPerUnit*T.units;
   const sellerTake=cashNow+sellerPayout+earnTotal;
@@ -175,7 +182,7 @@ function compute(L,T,exitOverride){
   const pvNet=pv(incrExit-sellerPayout-earnTotal)-cashNow-pvSalary-integCost;
   const effMult=postSyn>0?(cashNow+sellerPayout+earnTotal)/postSyn:0;
   const uplift=standaloneEbitda>0?postSyn/standaloneEbitda:0;
-  return{revenue,standaloneEbitda,postSyn,postPerUnit,standalone,cashNow,sellerPayout,payoutSeller,payoutRenjoy,earnTotal,salaryTotal,integCost,sellerTake,incrEb,incrExit,net,pvNet,effMult,uplift,ebEff,growthEff};
+  return{revenue,standaloneEbitda,postSyn,postPerUnit,standalone,cashNow,sellerPayout,payoutSeller,payoutBrand,earnTotal,salaryTotal,integCost,sellerTake,incrEb,incrExit,net,pvNet,effMult,uplift,ebEff,growthEff};
 }
 function renderTiers(){
   $('tiers').innerHTML=Object.entries(TIERS).map(([k,t])=>`<button class="pick ${state.tier===k?'on':''}" data-k="${k}"><div class="pn">${t.pn}</div><div class="pd">${t.pd}</div></button>`).join('');
@@ -190,7 +197,7 @@ function renderLevers(){
   const seg=(id,val,opts)=>`<div class="seg" data-seg="${id}">`+opts.map(o=>`<button class="${val===o[0]?'on':''}" data-v="${o[0]}">${o[1]}</button>`).join('')+`</div>`;
   const sw=(id,on,lab)=>`<div class="switch" data-sw="${id}"><div class="track ${on?'on':''}"><div class="knob"></div></div><span>${lab}</span></div>`;
   let h=`<div class="grid inputs">`;
-  h+=`<div class="field"><label>Cash at close</label><div class="row"><input type="number" data-l="cashPct" value="${L.cashPct}" step="5"><span class="unit">% of valuation</span></div><span class="hint">= ${fmt(L.cashPct/100*T.units*T.gpu*T.take*T.revMult)}</span></div>`;
+  h+=`<div class="field"><label>Cash at close</label><div class="row"><input type="number" data-l="cashPct" value="${L.cashPct}" step="5"><span class="unit">% of valuation</span></div><span class="hint">= ${fmt(compute(L,T).cashNow)}</span></div>`;
   h+=`<div class="field"><label>Seller stays on as GM?</label>${sw('salaryOn',L.salaryOn,L.salaryOn?'Yes — salaried':'No')}`+(L.salaryOn?`<div class="row" style="margin-top:8px"><span class="unit">$</span><input type="number" data-l="salary" value="${L.salary}"></div><span class="hint">/yr — they net ${fmt(T.curTake)} today</span>`:`<div class="hint" style="margin-top:8px">No salary line</div>`)+`</div>`;
   h+=`<div class="field"><label>Payout pool</label>${seg('poolMode',L.poolMode,[['own','Their book'],['market','Whole market']])}<span class="hint">${L.poolMode==='market'?'Their units + your in-market units + growth':'Only the units they bring'}</span></div>`;
   h+=`<div class="field"><label>Units seller adds by exit</label><div class="row"><input type="number" data-l="growthUnits" value="${L.growthUnits}"><span class="unit">units</span></div></div>`;
@@ -210,7 +217,7 @@ function renderLevers(){
 }
 function renderOutputs(){
   const T=econ(),L=state.L,r=compute(L,T);
-  $('derived').innerHTML=`<div class="d"><div class="dl">Operator revenue</div><div class="dv">${fmt(r.revenue)}</div></div><div class="d"><div class="dl">EBITDA today (seller)</div><div class="dv">${fmt(r.standaloneEbitda)}</div></div><div class="d"><div class="dl">EBITDA Renjoy-run</div><div class="dv">${fmt(r.postSyn)}<span class="badge">${x(r.uplift)} uplift</span></div></div><div class="d"><div class="dl">Standalone valuation</div><div class="dv">${fmt(r.standalone)}</div></div>`;
+  $('derived').innerHTML=`<div class="d"><div class="dl">Operator revenue</div><div class="dv">${fmt(r.revenue)}</div></div><div class="d"><div class="dl">EBITDA today (seller)</div><div class="dv">${fmt(r.standaloneEbitda)}</div></div><div class="d"><div class="dl">EBITDA Brand-run</div><div class="dv">${fmt(r.postSyn)}<span class="badge">${x(r.uplift)} uplift</span></div></div><div class="d"><div class="dl">Standalone valuation · ${T.valBasis==='ebitda'?'× EBITDA':'× rev'}</div><div class="dv">${fmt(r.standalone)}</div></div>`;
   let sh=`<div class="cb">`;
   sh+=`<div class="wf"><span class="k">Cash at close</span><span class="v">${fmt(r.cashNow)}</span></div>`;
   if(r.sellerPayout>0)sh+=`<div class="wf"><span class="k">Payout at exit</span><span class="v">${fmt(r.sellerPayout)}</span></div>`;
@@ -225,25 +232,26 @@ function renderOutputs(){
   rh+=`<div class="wf"><span class="k">Post-synergy EBITDA acquired</span><span class="v">${fmt(r.ebEff+r.growthEff)}</span></div>`;
   rh+=`<div class="wf"><span class="k">× exit → value at sale</span><span class="v">${fmt(r.incrExit)}</span></div>`;
   rh+=`<div class="wf"><span class="k">− Seller payout</span><span class="v neg">${fmt(r.payoutSeller)}</span></div>`;
-  if(r.payoutRenjoy>0)rh+=`<div class="wf"><span class="k">− × on pooled units</span><span class="v neg">${fmt(r.payoutRenjoy)}</span></div>`;
+  if(r.payoutBrand>0)rh+=`<div class="wf"><span class="k">− × on pooled units</span><span class="v neg">${fmt(r.payoutBrand)}</span></div>`;
   if(r.cashNow>0)rh+=`<div class="wf"><span class="k">− Cash at close</span><span class="v neg">${fmt(r.cashNow)}</span></div>`;
   if(r.salaryTotal>0)rh+=`<div class="wf"><span class="k">− GM salary over hold</span><span class="v neg">${fmt(r.salaryTotal)}</span></div>`;
   if(r.earnTotal>0)rh+=`<div class="wf"><span class="k">− Earn-outs</span><span class="v neg">${fmt(r.earnTotal)}</span></div>`;
   if(r.integCost>0)rh+=`<div class="wf"><span class="k">− Integration cost</span><span class="v neg">${fmt(r.integCost)}</span></div>`;
-  rh+=`<div class="wf tot"><span class="k">Net to Renjoy at exit</span><span class="v">${fmt(r.net)}</span></div>`;
+  rh+=`<div class="wf tot"><span class="k">Net to Brand at exit</span><span class="v">${fmt(r.net)}</span></div>`;
   rh+=`<div class="wf"><span class="k">Present value today</span><span class="v mut">${fmt(r.pvNet)}</span></div>`;
   rh+=`<div class="wf"><span class="k">Effective × paid</span><span class="v mut">${x(r.effMult)}</span></div></div>`;
   const lo=compute(L,T,Math.max(1,T.exitMult-2)).net,mid=r.net,hi=compute(L,T,T.exitMult+1).net;
   const sens=`<div class="sens"><div class="s"><div class="sl">${x(Math.max(1,T.exitMult-2))} exit</div><div class="sv">${fmt(lo)}</div></div><div class="s"><div class="sl">${x(T.exitMult)} exit</div><div class="sv">${fmt(mid)}</div></div><div class="s"><div class="sl">${x(T.exitMult+1)} exit</div><div class="sv">${fmt(hi)}</div></div></div>`;
-  $('readout').innerHTML=`<div class="col seller"><div class="ch">Seller gets</div>${sh}${anc}</div><div class="col renjoy"><div class="ch">Renjoy keeps</div>${rh}${sens}</div>`;
-  $('compare').innerHTML=Object.entries(STRUCTS).map(([k,s])=>{const c=compute(s.L,T);return`<div class="ccard ${state.struct===k?'on':''}" data-k="${k}"><div class="cn">${s.pn}</div><div class="cr"><span class="k">Net to Renjoy</span><span class="v">${fmt(c.net)}</span></div><div class="cr"><span class="k">Seller proceeds</span><span class="v">${fmt(c.sellerTake)}</span></div><div class="cr"><span class="k">Cash at close</span><span class="v">${fmt(c.cashNow)}</span></div></div>`;}).join('');
+  $('readout').innerHTML=`<div class="col seller"><div class="ch">Seller gets</div>${sh}${anc}</div><div class="col brand"><div class="ch">Brand keeps</div>${rh}${sens}</div>`;
+  $('compare').innerHTML=Object.entries(STRUCTS).map(([k,s])=>{const c=compute(s.L,T);return`<div class="ccard ${state.struct===k?'on':''}" data-k="${k}"><div class="cn">${s.pn}</div><div class="cr"><span class="k">Net to Brand</span><span class="v">${fmt(c.net)}</span></div><div class="cr"><span class="k">Seller proceeds</span><span class="v">${fmt(c.sellerTake)}</span></div><div class="cr"><span class="k">Cash at close</span><span class="v">${fmt(c.cashNow)}</span></div></div>`;}).join('');
   $('compare').querySelectorAll('.ccard').forEach(b=>b.addEventListener('click',()=>{state.struct=b.dataset.k;state.L={...STRUCTS[b.dataset.k].L};renderLevers();renderOutputs();renderStructs();}));
   const n=+$('pN').value;
-  const items=[['Seller doors added',(T.units*n).toLocaleString()+' units',0],['Renjoy-run EBITDA added',fmt(r.postSyn*n),0],['Cash deployed',fmt(r.cashNow*n),0],['Paid to sellers',fmt(r.sellerTake*n),0],['Exit value contributed',fmt(r.incrExit*n),0],['Net to Renjoy at exit',fmt(r.net*n),1]];
+  const items=[['Seller doors added',(T.units*n).toLocaleString()+' units',0],['Brand-run EBITDA added',fmt(r.postSyn*n),0],['Cash deployed',fmt(r.cashNow*n),0],['Paid to sellers',fmt(r.sellerTake*n),0],['Exit value contributed',fmt(r.incrExit*n),0],['Net to Brand at exit',fmt(r.net*n),1]];
   $('portfolio').innerHTML=items.map(i=>`<div class="pcard ${i[2]?'accent':''}"><div class="pl">${i[0]}</div><div class="pv">${i[1]}</div></div>`).join('');
-  $('footer').innerHTML=`<b>The engine:</b> a seller nets ${fmt(r.standaloneEbitda)} today; on Renjoy's stack the same book throws off ${fmt(r.postSyn)} (${x(r.uplift)}). You buy near their weak number and sell at ${x(T.exitMult)} on the strong one. <span class="pill">Not legal or tax advice</span>`;
+  $('footer').innerHTML=`<b>The engine:</b> a seller nets ${fmt(r.standaloneEbitda)} today; on Brand's stack the same book throws off ${fmt(r.postSyn)} (${x(r.uplift)}). You buy near their weak number and sell at ${x(T.exitMult)} on the strong one. <span class="pill">Not legal or tax advice</span>`;
 }
-['units','gpu','take','sMargin','leanMargin','revMult','rUnits','curTake','exitMult','years','disc','pN'].forEach(id=>$(id).addEventListener('input',renderOutputs));
+['units','gpu','take','sMargin','leanMargin','revMult','rUnits','curTake','exitMult','years','disc','entryEbitda','ebitdaMult','pN'].forEach(id=>$(id).addEventListener('input',renderOutputs));
+document.querySelector('[data-eseg="valBasis"]').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{state.valBasis=b.dataset.v;document.querySelectorAll('[data-eseg="valBasis"] button').forEach(x=>x.classList.toggle('on',x.dataset.v===state.valBasis));renderLevers();renderOutputs();}));
 function renderAll(){renderTiers();renderStructs();renderLevers();renderOutputs();}
 renderAll();
 </script>
